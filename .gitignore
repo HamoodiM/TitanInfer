@@ -24,6 +24,8 @@ cmake_install.cmake
 *.out
 
 # IDE and editor files
+.gitignore
+.dockerignore
 .vscode/
 .claude/
 CLAUDE.md
