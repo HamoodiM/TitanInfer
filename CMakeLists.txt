@@ -13,7 +13,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # ============================================================
 if(MSVC)
     add_compile_options(/W4 /WX /arch:AVX2)
-    # Debug mode bounds checking
     add_compile_definitions($<$<CONFIG:Debug>:TITANINFER_DEBUG>)
 else()
     add_compile_options(
@@ -30,6 +29,7 @@ endif()
 add_library(titaninfer
     src/tensor.cpp
     src/ops/matrix_ops.cpp
+    src/ops/matrix_ops_simd.cpp
 )
 
 target_include_directories(titaninfer PUBLIC
@@ -52,29 +52,39 @@ if(BUILD_TESTS)
         GIT_REPOSITORY https://github.com/google/googletest.git
         GIT_TAG        v1.14.0
     )
-    # For Windows: Prevent overriding parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
     
-    # Test executable
-    add_executable(tensor_test
-        tests/tensor_test.cpp
+    # Fetch Google Benchmark
+    FetchContent_Declare(
+        googlebenchmark
+        GIT_REPOSITORY https://github.com/google/benchmark.git
+        GIT_TAG        v1.8.3
     )
-    add_executable(matrix_ops_test tests/ops/matrix_ops_test.cpp)  
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googlebenchmark)
     
-    target_link_libraries(tensor_test
-        PRIVATE
-        titaninfer
-        GTest::gtest_main
-    )
-
-    target_link_libraries(matrix_ops_test  # <-- ADD THIS
-        PRIVATE titaninfer GTest::gtest_main
-    )
+    # Test executables
+    add_executable(tensor_test tests/tensor_test.cpp)
+    add_executable(matrix_ops_test tests/ops/matrix_ops_test.cpp)
+    add_executable(matrix_ops_simd_test tests/ops/matrix_ops_simd_test.cpp)
+    
+    target_link_libraries(tensor_test PRIVATE titaninfer GTest::gtest_main)
+    target_link_libraries(matrix_ops_test PRIVATE titaninfer GTest::gtest_main)
+    target_link_libraries(matrix_ops_simd_test PRIVATE titaninfer GTest::gtest_main)
     
     include(GoogleTest)
     gtest_discover_tests(tensor_test)
     gtest_discover_tests(matrix_ops_test)
+    gtest_discover_tests(matrix_ops_simd_test)
+    
+    # Benchmark executable
+    add_executable(matrix_benchmark benchmarks/matrix_benchmark.cpp)
+    target_link_libraries(matrix_benchmark 
+        PRIVATE 
+        titaninfer 
+        benchmark::benchmark
+    )
 endif()
 
 # ============================================================
