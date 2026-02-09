@@ -29,6 +29,7 @@ endif()
 # ============================================================
 add_library(titaninfer
     src/tensor.cpp
+    src/ops/matrix_ops.cpp
 )
 
 target_include_directories(titaninfer PUBLIC
@@ -59,15 +60,21 @@ if(BUILD_TESTS)
     add_executable(tensor_test
         tests/tensor_test.cpp
     )
+    add_executable(matrix_ops_test tests/ops/matrix_ops_test.cpp)  
     
     target_link_libraries(tensor_test
         PRIVATE
         titaninfer
         GTest::gtest_main
     )
+
+    target_link_libraries(matrix_ops_test  # <-- ADD THIS
+        PRIVATE titaninfer GTest::gtest_main
+    )
     
     include(GoogleTest)
     gtest_discover_tests(tensor_test)
+    gtest_discover_tests(matrix_ops_test)
 endif()
 
 # ============================================================

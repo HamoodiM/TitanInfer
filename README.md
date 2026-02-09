@@ -6,24 +6,29 @@ High-performance deep learning inference engine built from scratch in C++17 with
 
 - N-dimensional tensor support with dynamic shapes
 - 32-byte aligned memory for AVX2 SIMD operations
-- RAII-based memory management
-- Copy and move semantics
+- RAII-based memory management with copy and move semantics
+- Matrix operations: multiplication, transpose, element-wise operations
 - Cross-platform (Linux, macOS, Windows via Docker)
 
 ## Dependencies
 
 - Docker 20.10+
-- C++17 compiler (GCC 9+, Clang 10+, MSVC 2019+)
+- C++17 compiler (GCC 11+, Clang 10+, MSVC 2019+)
 - CMake 3.14+
 - GoogleTest 1.14.0 (auto-downloaded)
 
-## Quick Start
-
-### Build and Run Tests
+## Build
 
 ```bash
-# Build Docker image
-docker build -t titaninfer:latest .
+docker build -t titaninfer .
 
-# Run test suite
-docker run --rm titaninfer:latest /bin/bash -c "cd build && ctest --output-on-failure"
+# All tests
+docker run --rm titaninfer
+
+# Specific test suites
+docker run --rm titaninfer sh -c "cd build && ./tensor_test"
+docker run --rm titaninfer sh -c "cd build && ./matrix_ops_test"
+
+# Interactive container
+docker run --rm -it titaninfer /bin/bash
+```
