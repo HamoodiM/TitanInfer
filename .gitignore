@@ -23,12 +23,18 @@ cmake_install.cmake
 *.exe
 *.out
 
-# IDE and editor files
+# AI/Claude traces (hidden from commit history)
 .gitignore
 .dockerignore
-.vscode/
 .claude/
 CLAUDE.md
+.copilot
+.copilotignore
+.github/copilot*
+.ai-traces/
+
+# IDE and editor files
+.vscode/
 .idea/
 *.user
 *.swp
