@@ -1,0 +1,70 @@
+# Build directories
+build/
+cmake-build-debug/
+cmake-build-release/
+cmake-build-*/
+out/
+dist/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+cmake_install.cmake
+
+# Compiled object files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.exe
+*.out
+
+# IDE and editor files
+.vscode/
+.claude/
+CLAUDE.md
+.idea/
+*.user
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# CLion
+cmake-build-debug/
+cmake-build-release/
+
+# Visual Studio
+.vs/
+*.sln
+*.vcxproj*
+
+# Executable outputs
+/bin/
+/lib/
+
+# Test and benchmark outputs
+test_output/
+benchmark_results/
+*.log
+
+# Dependencies
+vcpkg/
+conan/
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# OS-specific
+.env
+.env.local

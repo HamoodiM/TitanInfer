@@ -53,6 +53,8 @@ endif()
 add_library(titaninfer
     src/tensor.cpp
     src/ops/matrix_ops.cpp
+    src/ops/activations.cpp
+    src/layers/activation_layer.cpp
 )
 
 # Add SIMD source only if available
@@ -99,9 +101,17 @@ if(BUILD_TESTS)
     target_link_libraries(tensor_test PRIVATE titaninfer GTest::gtest_main)
     target_link_libraries(matrix_ops_test PRIVATE titaninfer GTest::gtest_main)
 
+    add_executable(activations_test tests/ops/activations_test.cpp)
+    add_executable(layer_test tests/layers/layer_test.cpp)
+
+    target_link_libraries(activations_test PRIVATE titaninfer GTest::gtest_main)
+    target_link_libraries(layer_test PRIVATE titaninfer GTest::gtest_main)
+
     include(GoogleTest)
     gtest_discover_tests(tensor_test)
     gtest_discover_tests(matrix_ops_test)
+    gtest_discover_tests(activations_test)
+    gtest_discover_tests(layer_test)
 
     # SIMD-only test/benchmark: add only if SIMD is available
     if(SIMD_AVAILABLE)
