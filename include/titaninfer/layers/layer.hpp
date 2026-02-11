@@ -2,6 +2,7 @@
 
 #include "titaninfer/tensor.hpp"
 #include <string>
+#include <vector>
 
 namespace titaninfer {
 namespace layers {
@@ -28,6 +29,22 @@ public:
      * @brief Human-readable layer name
      */
     virtual std::string name() const = 0;
+
+    /**
+     * @brief Total number of learnable parameters (weights + bias)
+     * @return 0 for parameterless layers (e.g. activations)
+     */
+    virtual size_t parameter_count() const { return 0; }
+
+    /**
+     * @brief Compute output shape given an input shape
+     * @param input_shape Shape of the input tensor
+     * @return Output shape (identity for shape-preserving layers)
+     */
+    virtual std::vector<size_t> output_shape(
+        const std::vector<size_t>& input_shape) const {
+        return input_shape;
+    }
 };
 
 } // namespace layers
