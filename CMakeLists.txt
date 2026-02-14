@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(TitanInfer VERSION 0.1.0 LANGUAGES CXX)
+project(TitanInfer VERSION 0.1.0 LANGUAGES C CXX)
 
 # ============================================================
 # Compiler Requirements
@@ -60,6 +60,9 @@ add_library(titaninfer
     src/io/model_serializer.cpp
     src/io/model_parser.cpp
     src/engine/inference_engine.cpp
+    src/logger.cpp
+    src/model_handle.cpp
+    src/titaninfer_c.cpp
 )
 
 # Add SIMD source only if available
@@ -71,6 +74,10 @@ target_include_directories(titaninfer PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+
+# Thread support (pthread on Linux, no-op on Windows)
+find_package(Threads REQUIRED)
+target_link_libraries(titaninfer PUBLIC Threads::Threads)
 
 # ============================================================
 # Testing
@@ -130,6 +137,10 @@ if(BUILD_TESTS)
     target_link_libraries(inference_engine_test PRIVATE titaninfer GTest::gtest_main)
     gtest_discover_tests(inference_engine_test)
 
+    add_executable(api_test tests/api/test_api.cpp)
+    target_link_libraries(api_test PRIVATE titaninfer GTest::gtest_main)
+    gtest_discover_tests(api_test)
+
     # SIMD-only test/benchmark: add only if SIMD is available
     if(SIMD_AVAILABLE)
         add_executable(matrix_ops_simd_test tests/ops/matrix_ops_simd_test.cpp)
@@ -144,6 +155,22 @@ if(BUILD_TESTS)
             benchmark::benchmark
         )
     endif()
+endif()
+
+# ============================================================
+# Examples
+# ============================================================
+option(BUILD_EXAMPLES "Build example executables" ON)
+
+if(BUILD_EXAMPLES)
+    add_executable(simple_inference examples/simple_inference.cpp)
+    target_link_libraries(simple_inference PRIVATE titaninfer)
+
+    add_executable(batch_processing examples/batch_processing.cpp)
+    target_link_libraries(batch_processing PRIVATE titaninfer)
+
+    add_executable(c_api_usage examples/c_api_usage.c)
+    target_link_libraries(c_api_usage PRIVATE titaninfer)
 endif()
 
 # ============================================================
