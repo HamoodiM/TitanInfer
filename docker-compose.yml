@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  # Run all unit tests
+  test:
+    build:
+      context: .
+      target: builder
+    command: sh -c "cd build && ctest --output-on-failure"
+    volumes:
+      - ./models:/titaninfer/models
+
+  # Run performance benchmarks
+  benchmark:
+    build:
+      context: .
+      target: builder
+    command: sh -c "cd build/tests && ./matrix_benchmark --benchmark_repetitions=3"
+    volumes:
+      - ./models:/titaninfer/models
+
+  # Build the minimal runtime image
+  runtime:
+    build:
+      context: .
+      target: runtime
+    volumes:
+      - ./models:/titaninfer/models
