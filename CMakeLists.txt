@@ -57,6 +57,8 @@ add_library(titaninfer
     src/layers/activation_layer.cpp
     src/layers/dense_layer.cpp
     src/layers/sequential.cpp
+    src/io/model_serializer.cpp
+    src/io/model_parser.cpp
 )
 
 # Add SIMD source only if available
@@ -118,6 +120,10 @@ if(BUILD_TESTS)
     gtest_discover_tests(activations_test)
     gtest_discover_tests(layer_test)
     gtest_discover_tests(sequential_test)
+
+    add_executable(serialization_test tests/io/serialization_test.cpp)
+    target_link_libraries(serialization_test PRIVATE titaninfer GTest::gtest_main)
+    gtest_discover_tests(serialization_test)
 
     # SIMD-only test/benchmark: add only if SIMD is available
     if(SIMD_AVAILABLE)
