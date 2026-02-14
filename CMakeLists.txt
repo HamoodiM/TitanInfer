@@ -59,6 +59,7 @@ add_library(titaninfer
     src/layers/sequential.cpp
     src/io/model_serializer.cpp
     src/io/model_parser.cpp
+    src/engine/inference_engine.cpp
 )
 
 # Add SIMD source only if available
@@ -124,6 +125,10 @@ if(BUILD_TESTS)
     add_executable(serialization_test tests/io/serialization_test.cpp)
     target_link_libraries(serialization_test PRIVATE titaninfer GTest::gtest_main)
     gtest_discover_tests(serialization_test)
+
+    add_executable(inference_engine_test tests/engine/inference_engine_test.cpp)
+    target_link_libraries(inference_engine_test PRIVATE titaninfer GTest::gtest_main)
+    gtest_discover_tests(inference_engine_test)
 
     # SIMD-only test/benchmark: add only if SIMD is available
     if(SIMD_AVAILABLE)
