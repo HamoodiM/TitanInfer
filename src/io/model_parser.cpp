@@ -1,6 +1,9 @@
 #include "titaninfer/io/model_parser.hpp"
 #include "titaninfer/layers/dense_layer.hpp"
 #include "titaninfer/layers/activation_layer.hpp"
+#include "titaninfer/layers/conv2d_layer.hpp"
+#include "titaninfer/layers/pooling_layers.hpp"
+#include "titaninfer/layers/flatten_layer.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <cstring>
@@ -111,6 +114,67 @@ std::unique_ptr<layers::Sequential> ModelParser::load(
                 break;
             case LayerType::SOFTMAX:
                 model->add(std::make_unique<layers::SoftmaxLayer>());
+                break;
+            case LayerType::CONV2D: {
+                uint32_t in_ch = read_value<uint32_t>(in);
+                uint32_t out_ch = read_value<uint32_t>(in);
+                uint32_t kh = read_value<uint32_t>(in);
+                uint32_t kw = read_value<uint32_t>(in);
+                uint32_t sh = read_value<uint32_t>(in);
+                uint32_t sw = read_value<uint32_t>(in);
+                uint8_t pad_mode = read_value<uint8_t>(in);
+                uint8_t has_bias = read_value<uint8_t>(in);
+
+                auto padding = pad_mode == 1
+                    ? ops::PaddingMode::SAME : ops::PaddingMode::VALID;
+
+                auto conv = std::make_unique<layers::Conv2DLayer>(
+                    static_cast<size_t>(in_ch), static_cast<size_t>(out_ch),
+                    static_cast<size_t>(kh), static_cast<size_t>(kw),
+                    static_cast<size_t>(sh), static_cast<size_t>(sw),
+                    padding, has_bias != 0);
+
+                size_t weight_count = static_cast<size_t>(out_ch) *
+                    static_cast<size_t>(in_ch) *
+                    static_cast<size_t>(kh) * static_cast<size_t>(kw);
+                Tensor weights({static_cast<size_t>(out_ch),
+                                static_cast<size_t>(in_ch),
+                                static_cast<size_t>(kh),
+                                static_cast<size_t>(kw)});
+                read_floats(in, weights.data(), weight_count);
+                conv->set_weights(weights);
+
+                if (has_bias != 0) {
+                    Tensor bias({static_cast<size_t>(out_ch)});
+                    read_floats(in, bias.data(), static_cast<size_t>(out_ch));
+                    conv->set_bias(bias);
+                }
+
+                model->add(std::move(conv));
+                break;
+            }
+            case LayerType::MAXPOOL2D: {
+                uint32_t ks = read_value<uint32_t>(in);
+                uint32_t st = read_value<uint32_t>(in);
+                uint32_t pd = read_value<uint32_t>(in);
+                model->add(std::make_unique<layers::MaxPool2DLayer>(
+                    static_cast<size_t>(ks),
+                    static_cast<size_t>(st),
+                    static_cast<size_t>(pd)));
+                break;
+            }
+            case LayerType::AVGPOOL2D: {
+                uint32_t ks = read_value<uint32_t>(in);
+                uint32_t st = read_value<uint32_t>(in);
+                uint32_t pd = read_value<uint32_t>(in);
+                model->add(std::make_unique<layers::AvgPool2DLayer>(
+                    static_cast<size_t>(ks),
+                    static_cast<size_t>(st),
+                    static_cast<size_t>(pd)));
+                break;
+            }
+            case LayerType::FLATTEN:
+                model->add(std::make_unique<layers::FlattenLayer>());
                 break;
             default:
                 throw std::runtime_error(

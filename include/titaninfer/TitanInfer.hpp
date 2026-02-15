@@ -21,6 +21,16 @@
  */
 
 #include "titaninfer/tensor.hpp"
+#include "titaninfer/quantized_tensor.hpp"
 #include "titaninfer/exceptions.hpp"
 #include "titaninfer/logger.hpp"
 #include "titaninfer/model_handle.hpp"
+#include "titaninfer/layers/conv2d_layer.hpp"
+#include "titaninfer/layers/pooling_layers.hpp"
+#include "titaninfer/layers/flatten_layer.hpp"
+#include "titaninfer/layers/fused_layers.hpp"
+#include "titaninfer/layers/quantized_dense_layer.hpp"
+#include "titaninfer/engine/thread_pool.hpp"
+#include "titaninfer/engine/fusion.hpp"
+#include "titaninfer/engine/dynamic_batcher.hpp"
+#include "titaninfer/engine/model_compiler.hpp"

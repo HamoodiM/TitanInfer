@@ -393,7 +393,7 @@ TEST(SerializationTest, BinaryFormatVersion) {
     in.seekg(4); // skip magic
     uint32_t version;
     in.read(reinterpret_cast<char*>(&version), 4);
-    EXPECT_EQ(version, 1u);
+    EXPECT_EQ(version, 2u);
 }
 
 TEST(SerializationTest, BinaryFormatLayerCount) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "titaninfer/tensor.hpp"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,11 @@ namespace layers {
 class Layer {
 public:
     virtual ~Layer() = default;
+
+    /**
+     * @brief Create a deep copy of this layer
+     */
+    virtual std::unique_ptr<Layer> clone() const = 0;
 
     /**
      * @brief Run forward pass

@@ -27,6 +27,7 @@ public:
      */
     DenseLayer(size_t in_features, size_t out_features, bool use_bias = true);
 
+    std::unique_ptr<Layer> clone() const override;
     void forward(const Tensor& input, Tensor& output) override;
     std::string name() const override;
     size_t parameter_count() const override;

@@ -5,12 +5,24 @@ add_library(titaninfer
     tensor.cpp
     ops/matrix_ops.cpp
     ops/activations.cpp
+    ops/conv_ops.cpp
+    ops/quantized_ops.cpp
+    quantized_tensor.cpp
     layers/activation_layer.cpp
     layers/dense_layer.cpp
     layers/sequential.cpp
+    layers/conv2d_layer.cpp
+    layers/pooling_layers.cpp
+    layers/flatten_layer.cpp
+    layers/fused_layers.cpp
+    layers/quantized_dense_layer.cpp
     io/model_serializer.cpp
     io/model_parser.cpp
     engine/inference_engine.cpp
+    engine/thread_pool.cpp
+    engine/fusion.cpp
+    engine/dynamic_batcher.cpp
+    engine/model_compiler.cpp
     logger.cpp
     model_handle.cpp
     titaninfer_c.cpp

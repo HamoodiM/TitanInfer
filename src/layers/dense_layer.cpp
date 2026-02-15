@@ -17,6 +17,15 @@ DenseLayer::DenseLayer(size_t in_features, size_t out_features, bool use_bias)
     }
 }
 
+std::unique_ptr<Layer> DenseLayer::clone() const {
+    auto copy = std::make_unique<DenseLayer>(in_features_, out_features_, use_bias_);
+    copy->set_weights(weights_);
+    if (use_bias_) {
+        copy->set_bias(bias_);
+    }
+    return copy;
+}
+
 void DenseLayer::forward(const Tensor& input, Tensor& output) {
     if (input.ndim() == 1) {
         // 1D: y = W @ x + b

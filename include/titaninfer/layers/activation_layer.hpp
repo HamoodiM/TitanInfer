@@ -11,6 +11,7 @@ namespace layers {
  */
 class ReluLayer : public Layer {
 public:
+    std::unique_ptr<Layer> clone() const override;
     void forward(const Tensor& input, Tensor& output) override;
     std::string name() const override;
 };
@@ -20,6 +21,7 @@ public:
  */
 class SigmoidLayer : public Layer {
 public:
+    std::unique_ptr<Layer> clone() const override;
     void forward(const Tensor& input, Tensor& output) override;
     std::string name() const override;
 };
@@ -29,6 +31,7 @@ public:
  */
 class TanhLayer : public Layer {
 public:
+    std::unique_ptr<Layer> clone() const override;
     void forward(const Tensor& input, Tensor& output) override;
     std::string name() const override;
 };
@@ -38,6 +41,7 @@ public:
  */
 class SoftmaxLayer : public Layer {
 public:
+    std::unique_ptr<Layer> clone() const override;
     void forward(const Tensor& input, Tensor& output) override;
     std::string name() const override;
 };
