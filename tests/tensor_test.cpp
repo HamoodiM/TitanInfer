@@ -121,7 +121,9 @@ TEST(TensorTest, SelfAssignment) {
     Tensor t({3, 3});
     t.fill(7.0f);
     
-    t = t;  // Self-assignment
+    // Suppress Clang -Wself-assign-overloaded by going through a reference
+    Tensor& ref = t;
+    t = ref;  // Self-assignment
     
     EXPECT_EQ(t.size(), 9);
     EXPECT_FLOAT_EQ(t[0], 7.0f);

@@ -50,10 +50,11 @@ static void BM_ThreadPool_WorkloadParallel(benchmark::State& state) {
 
     // Each task does some actual work (matrix-like compute)
     auto work = []() {
-        volatile float sum = 0;
+        float sum = 0;
         for (int i = 0; i < 1000; ++i) {
             sum += static_cast<float>(i) * 0.001f;
         }
+        benchmark::DoNotOptimize(sum);
     };
 
     for (auto _ : state) {
