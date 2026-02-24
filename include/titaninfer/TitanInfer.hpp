@@ -34,3 +34,4 @@
 #include "titaninfer/engine/fusion.hpp"
 #include "titaninfer/engine/dynamic_batcher.hpp"
 #include "titaninfer/engine/model_compiler.hpp"
+#include "titaninfer/engine/model_server.hpp"

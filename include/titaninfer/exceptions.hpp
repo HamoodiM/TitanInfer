@@ -24,6 +24,13 @@ enum class ErrorCode : int {
 
     // Internal errors (300-399)
     INTERNAL_ERROR    = 300,
+
+    // Server errors (400-499)
+    MODEL_NOT_FOUND   = 400,
+    VERSION_NOT_FOUND = 401,
+    QUOTA_EXCEEDED    = 402,
+    INVALID_REQUEST   = 403,
+    SERVER_STOPPED    = 404,
 };
 
 /**
@@ -71,6 +78,16 @@ class ValidationException : public TitanInferException {
 public:
     explicit ValidationException(const std::string& msg,
                                  ErrorCode code = ErrorCode::SHAPE_MISMATCH)
+        : TitanInferException(msg, code) {}
+};
+
+/**
+ * @brief Thrown when a model server operation fails
+ */
+class ServerException : public TitanInferException {
+public:
+    explicit ServerException(const std::string& msg,
+                             ErrorCode code = ErrorCode::INTERNAL_ERROR)
         : TitanInferException(msg, code) {}
 };
 
