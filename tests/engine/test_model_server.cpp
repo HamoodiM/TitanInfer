@@ -665,8 +665,8 @@ TEST_F(ModelServerTest, ConcurrentQuotaEnforced) {
     }
 
     int ok = 0, rejected = 0;
-    for (auto& f : futures) {
-        Response resp = f.get();
+    for (auto& fut : futures) {
+        Response resp = fut.get();
         if (resp.status_code == 200) ok++;
         if (resp.status_code == 429) rejected++;
     }
