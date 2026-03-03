@@ -1,5 +1,7 @@
 # ModelServer node image.
 # Loads a .titan model and sends heartbeats to the ClusterController.
+# The test.titan model is generated at build time and baked into the image so
+# no external volume mount is required for CI / chaos tests.
 
 # ---- builder ---------------------------------------------------------------
 FROM ubuntu:22.04 AS builder
@@ -22,13 +24,17 @@ RUN update-alternatives --install /usr/bin/gcc  gcc  /usr/bin/gcc-11  100 \
 WORKDIR /titaninfer
 COPY . .
 
+# Build both the gRPC node binary and the test-model generator in one pass.
 RUN cmake -B /build \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_STANDARD=20 \
         -DUSE_GRPC=ON \
         -DBUILD_TESTS=OFF \
         -DBUILD_EXAMPLES=OFF \
-    && cmake --build /build --target model_server_node -j "$(nproc)"
+    && cmake --build /build -j "$(nproc)"
+
+# Generate the test model so it is baked into the runtime image.
+RUN mkdir -p /models && /build/bin/gen_test_model /models/test.titan
 
 # ---- runtime ---------------------------------------------------------------
 FROM ubuntu:22.04 AS runtime
@@ -40,13 +46,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/bin/model_server_node /usr/local/bin/
-
-# Create model directory; the compose file mounts real .titan files here.
-RUN mkdir -p /models
+# Baked-in test model — overridable at runtime via a volume mount on /models.
+COPY --from=builder /models/test.titan /models/test.titan
 
 EXPOSE 8080
-HEALTHCHECK --interval=3s --timeout=2s --retries=10 \
-    CMD curl -sf http://localhost:8080/health || exit 1
 
 ENV NODE_ID=node0
 ENV CONTROLLER_ADDR=controller:50051

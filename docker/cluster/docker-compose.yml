@@ -11,7 +11,9 @@ services:
       - "50051:50051"  # gRPC
       - "9090:9090"    # Prometheus /metrics
     healthcheck:
-      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      # TCP check: succeeds as soon as the gRPC port accepts connections.
+      # The CI runner probes gRPC health semantics from outside with grpc_health_probe.
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/50051"]
       interval: 3s
       timeout: 2s
       retries: 15
@@ -20,6 +22,8 @@ services:
       METRICS_PORT: "9090"
 
   # ---- ModelServer nodes (3 replicas) ----------------------------------------
+  # The test.titan model is baked into the node image at build time;
+  # no external volume mount is needed for chaos / CI tests.
   node1:
     build:
       context: ../..
@@ -30,15 +34,13 @@ services:
       MODEL_PATH: /models/test.titan
       MODEL_NAME: default
       NODE_HTTP_PORT: "8080"
-    volumes:
-      - models:/models:ro
     ports:
       - "8081:8080"
     depends_on:
       controller:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
       interval: 3s
       timeout: 2s
       retries: 10
@@ -53,15 +55,13 @@ services:
       MODEL_PATH: /models/test.titan
       MODEL_NAME: default
       NODE_HTTP_PORT: "8080"
-    volumes:
-      - models:/models:ro
     ports:
       - "8082:8080"
     depends_on:
       controller:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
       interval: 3s
       timeout: 2s
       retries: 10
@@ -76,15 +76,13 @@ services:
       MODEL_PATH: /models/test.titan
       MODEL_NAME: default
       NODE_HTTP_PORT: "8080"
-    volumes:
-      - models:/models:ro
     ports:
       - "8083:8080"
     depends_on:
       controller:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
       interval: 3s
       timeout: 2s
       retries: 10
@@ -107,11 +105,3 @@ services:
         condition: service_started
       node3:
         condition: service_started
-
-volumes:
-  models:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "${MODEL_DIR:-/tmp/titaninfer_models}"

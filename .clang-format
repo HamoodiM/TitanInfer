@@ -1,0 +1,20 @@
+---
+# TitanInfer C++ formatting style
+# Based on LLVM with project-specific overrides.
+# Run: clang-format -i <file>  to reformat in place.
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+PointerAlignment: Left
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignTrailingComments: true
+BreakBeforeBraces: Attach
+IndentCaseLabels: false
+SpaceBeforeParens: ControlStatements
+Cpp11BracedListStyle: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never

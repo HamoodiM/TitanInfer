@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         protobuf-compiler \
         protobuf-compiler-grpc \
         libprotobuf-dev \
-        grpc-health-probe \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --install /usr/bin/gcc  gcc  /usr/bin/gcc-11  100 \
@@ -38,13 +37,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libstdc++6 \
         libgrpc++1 \
         libprotobuf23 \
-        grpc-health-probe \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/bin/cluster_controller_server /usr/local/bin/
 
 EXPOSE 50051 9090
+
+# TCP-level health check: no grpc_health_probe binary needed inside the
+# container.  The CI runner installs grpc_health_probe separately and probes
+# localhost:50051 from outside.
 HEALTHCHECK --interval=3s --timeout=2s --retries=10 \
-    CMD grpc_health_probe -addr=:50051 || exit 1
+    CMD bash -c 'echo > /dev/tcp/localhost/50051' || exit 1
 
 CMD ["cluster_controller_server", "--port=50051", "--metrics-port=9090"]

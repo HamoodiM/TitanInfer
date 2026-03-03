@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: titaninfer-serving-binary
-          path: build/tests/engine/model_server_test
+          path: build/tests/model_server_test
           retention-days: 1
 
   serving-integration:

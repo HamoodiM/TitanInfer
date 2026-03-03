@@ -34,13 +34,8 @@ jobs:
             -o /usr/local/bin/grpc_health_probe
           chmod +x /usr/local/bin/grpc_health_probe
 
-      # Prepare a model directory — chaos test uses an in-memory/stub model
-      - name: Prepare model directory
-        run: |
-          mkdir -p /tmp/titaninfer_models
-          echo "MODEL_DIR=/tmp/titaninfer_models" >> "$GITHUB_ENV"
-
       # Build all cluster images (controller + node)
+      # Note: the .titan test model is generated at image build time (baked in).
       - name: Build cluster images
         run: |
           docker compose -f docker/cluster/docker-compose.yml build \
@@ -79,8 +74,10 @@ jobs:
           done
           HEALTHY=$(curl -sf http://localhost:9090/metrics \
             | awk '/^cluster_healthy_nodes / {print $2}')
-          [ "${HEALTHY}" = "3" ] || \
-            (echo "ERROR: expected 3 healthy nodes, got ${HEALTHY}" && exit 1)
+          if [ "${HEALTHY}" != "3" ]; then
+            echo "ERROR: expected 3 healthy nodes, got ${HEALTHY:-<none>}"
+            exit 1
+          fi
         env:
           METRICS_URL: http://localhost:9090/metrics
 
