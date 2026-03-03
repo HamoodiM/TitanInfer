@@ -24,6 +24,7 @@ add_library(titaninfer
     engine/dynamic_batcher.cpp
     engine/model_compiler.cpp
     engine/model_server.cpp
+    engine/cluster_controller.cpp
     logger.cpp
     model_handle.cpp
     titaninfer_c.cpp

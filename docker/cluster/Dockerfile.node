@@ -1,0 +1,57 @@
+# ModelServer node image.
+# Loads a .titan model and sends heartbeats to the ClusterController.
+
+# ---- builder ---------------------------------------------------------------
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        g++-11 \
+        libgrpc++-dev \
+        protobuf-compiler \
+        protobuf-compiler-grpc \
+        libprotobuf-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/gcc  gcc  /usr/bin/gcc-11  100 \
+ && update-alternatives --install /usr/bin/g++  g++  /usr/bin/g++-11  100
+
+WORKDIR /titaninfer
+COPY . .
+
+RUN cmake -B /build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DUSE_GRPC=ON \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_EXAMPLES=OFF \
+    && cmake --build /build --target model_server_node -j "$(nproc)"
+
+# ---- runtime ---------------------------------------------------------------
+FROM ubuntu:22.04 AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libstdc++6 \
+        libgrpc++1 \
+        libprotobuf23 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/bin/model_server_node /usr/local/bin/
+
+# Create model directory; the compose file mounts real .titan files here.
+RUN mkdir -p /models
+
+EXPOSE 8080
+HEALTHCHECK --interval=3s --timeout=2s --retries=10 \
+    CMD curl -sf http://localhost:8080/health || exit 1
+
+ENV NODE_ID=node0
+ENV CONTROLLER_ADDR=controller:50051
+ENV MODEL_PATH=/models/test.titan
+ENV MODEL_NAME=default
+ENV NODE_HTTP_PORT=8080
+
+CMD ["model_server_node"]

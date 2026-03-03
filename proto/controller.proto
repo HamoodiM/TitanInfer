@@ -1,0 +1,102 @@
+// TitanInfer ClusterController gRPC protocol definition.
+// Used by cluster binaries (bin/) for real network communication.
+// Core library (cluster_controller.hpp/cpp) is zero-dependency and does NOT
+// depend on this file — it uses in-process function calls.
+//
+// Generate C++ stubs (inside Docker):
+//   protoc --grpc_out=. --cpp_out=. --plugin=protoc-gen-grpc=`which grpc_cpp_plugin` \
+//       proto/controller.proto
+
+syntax = "proto3";
+
+package titaninfer.controller;
+
+import "google/protobuf/empty.proto";
+
+// ---------------------------------------------------------------------------
+// Data types
+// ---------------------------------------------------------------------------
+
+message NodeMetrics {
+    double queue_depth     = 1;
+    double p95_latency_ms  = 2;
+    double cpu_util        = 3;  // [0, 1]
+    double memory_pressure = 4;  // [0, 1]
+    uint64 active_requests = 5;
+}
+
+message NodeInfo {
+    string node_id = 1;
+    string address = 2;  // "host:port"
+    map<string, NodeMetrics> model_metrics = 3;
+}
+
+message HeartbeatRequest {
+    string node_id = 1;
+    map<string, NodeMetrics> model_metrics = 2;
+}
+
+message HeartbeatResponse {
+    bool   acknowledged    = 1;
+    uint64 cluster_version = 2;
+}
+
+message RegisterRequest {
+    NodeInfo node_info = 1;
+}
+
+message RegisterResponse {
+    bool   accepted        = 1;
+    uint64 cluster_version = 2;
+}
+
+message ScheduleRequest {
+    string model_name = 1;
+    string tenant_id  = 2;
+    string request_id = 3;
+}
+
+message RoutingDecision {
+    string target_node_id  = 1;
+    double confidence_score = 2;
+    string trace_id        = 3;
+    string error           = 4;  // empty on success
+}
+
+message ScaleRecommendation {
+    string model_name    = 1;
+    int32  delta_replicas = 2;
+    string justification = 3;
+    double trigger_metric = 4;
+}
+
+message ClusterStateResponse {
+    repeated NodeInfo nodes    = 1;
+    uint64            version  = 2;
+    uint64            healthy  = 3;
+}
+
+message MetricsResponse {
+    string prometheus_text = 1;  // Prometheus text exposition format
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service ClusterControllerService {
+    // Node lifecycle
+    rpc RegisterNode (RegisterRequest) returns (RegisterResponse);
+    rpc Heartbeat    (HeartbeatRequest) returns (HeartbeatResponse);
+
+    // Scheduling (called by load balancers / API gateways)
+    rpc Schedule (ScheduleRequest) returns (RoutingDecision);
+
+    // Autoscaling signals (polled by horizontal scaling controllers)
+    rpc GetScaleSignals (google.protobuf.Empty)
+        returns (stream ScaleRecommendation);
+
+    // Observability
+    rpc GetClusterState (google.protobuf.Empty) returns (ClusterStateResponse);
+    rpc GetMetrics      (google.protobuf.Empty) returns (MetricsResponse);
+}

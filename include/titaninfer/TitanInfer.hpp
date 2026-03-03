@@ -35,3 +35,4 @@
 #include "titaninfer/engine/dynamic_batcher.hpp"
 #include "titaninfer/engine/model_compiler.hpp"
 #include "titaninfer/engine/model_server.hpp"
+#include "titaninfer/engine/cluster_controller.hpp"

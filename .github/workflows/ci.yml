@@ -59,3 +59,42 @@ jobs:
       - name: Test (Windows)
         if: runner.os == 'Windows'
         run: cd build && ctest --output-on-failure -C Release
+
+      - name: Upload serving test binary (GCC only)
+        if: matrix.compiler == 'gcc'
+        uses: actions/upload-artifact@v4
+        with:
+          name: titaninfer-serving-binary
+          path: build/tests/engine/model_server_test
+          retention-days: 1
+
+  serving-integration:
+    needs: build-and-test
+    runs-on: ubuntu-22.04
+    name: Serving Integration Tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download serving test binary
+        uses: actions/download-artifact@v4
+        with:
+          name: titaninfer-serving-binary
+          path: serving-bin/
+
+      - name: Make executable
+        run: chmod +x serving-bin/model_server_test
+
+      - name: Run serving integration tests
+        timeout-minutes: 5
+        run: |
+          serving-bin/model_server_test \
+            --gtest_filter="*Concurrent*:*Integration*:*HotReload*:*TrafficSplit*:*RateLimit*:*Cache*" \
+            --gtest_output=xml:serving_results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: serving-test-results
+          path: serving_results.xml

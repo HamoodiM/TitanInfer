@@ -1,0 +1,50 @@
+# ClusterController gRPC server image.
+# Multi-stage: builder compiles everything; runtime is minimal.
+
+# ---- builder ---------------------------------------------------------------
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        g++-11 \
+        libgrpc++-dev \
+        protobuf-compiler \
+        protobuf-compiler-grpc \
+        libprotobuf-dev \
+        grpc-health-probe \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/gcc  gcc  /usr/bin/gcc-11  100 \
+ && update-alternatives --install /usr/bin/g++  g++  /usr/bin/g++-11  100
+
+WORKDIR /titaninfer
+COPY . .
+
+RUN cmake -B /build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DUSE_GRPC=ON \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_EXAMPLES=OFF \
+    && cmake --build /build --target cluster_controller_server -j "$(nproc)"
+
+# ---- runtime ---------------------------------------------------------------
+FROM ubuntu:22.04 AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libstdc++6 \
+        libgrpc++1 \
+        libprotobuf23 \
+        grpc-health-probe \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/bin/cluster_controller_server /usr/local/bin/
+
+EXPOSE 50051 9090
+HEALTHCHECK --interval=3s --timeout=2s --retries=10 \
+    CMD grpc_health_probe -addr=:50051 || exit 1
+
+CMD ["cluster_controller_server", "--port=50051", "--metrics-port=9090"]

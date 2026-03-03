@@ -1,0 +1,116 @@
+name: Chaos Engineering
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run nightly at 02:00 UTC to catch regressions between releases
+    - cron: '0 2 * * *'
+
+jobs:
+  # --------------------------------------------------------------------------
+  # chaos-cluster: build a 3-node Docker cluster and run fault-injection tests
+  # --------------------------------------------------------------------------
+  chaos-cluster:
+    name: 3-Node Cluster Chaos Test
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # grpcurl — send gRPC calls from shell scripts
+      - name: Install grpcurl
+        run: |
+          curl -sSfL \
+            https://github.com/fullstorydev/grpcurl/releases/download/v1.9.1/grpcurl_1.9.1_linux_x86_64.tar.gz \
+            | tar xz -C /usr/local/bin grpcurl
+          chmod +x /usr/local/bin/grpcurl
+
+      # grpc_health_probe — verify gRPC health check endpoint
+      - name: Install grpc_health_probe
+        run: |
+          curl -sSfL \
+            https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.28/grpc_health_probe-linux-amd64 \
+            -o /usr/local/bin/grpc_health_probe
+          chmod +x /usr/local/bin/grpc_health_probe
+
+      # Prepare a model directory — chaos test uses an in-memory/stub model
+      - name: Prepare model directory
+        run: |
+          mkdir -p /tmp/titaninfer_models
+          echo "MODEL_DIR=/tmp/titaninfer_models" >> "$GITHUB_ENV"
+
+      # Build all cluster images (controller + node)
+      - name: Build cluster images
+        run: |
+          docker compose -f docker/cluster/docker-compose.yml build \
+            --no-cache
+        timeout-minutes: 25
+
+      # Start the cluster (controller + 3 nodes)
+      - name: Start cluster
+        run: |
+          docker compose -f docker/cluster/docker-compose.yml \
+            up -d controller node1 node2 node3
+
+      # Wait for ClusterController gRPC health check to pass
+      - name: Wait for controller to be healthy
+        run: |
+          echo "Waiting for ClusterController gRPC health..."
+          for i in $(seq 1 30); do
+            if grpc_health_probe -addr=localhost:50051 2>/dev/null; then
+              echo "Controller is healthy"
+              break
+            fi
+            echo "  attempt $i/30 — retrying in 2s"
+            sleep 2
+          done
+          grpc_health_probe -addr=localhost:50051
+
+      # Wait for all 3 nodes to register and send first heartbeat
+      - name: Wait for all nodes to register (≤ 60 s)
+        run: |
+          for i in $(seq 1 60); do
+            HEALTHY=$(curl -sf http://localhost:9090/metrics \
+              | awk '/^cluster_healthy_nodes / {print $2}')
+            echo "  healthy_nodes = ${HEALTHY:-?} (attempt $i)"
+            [ "${HEALTHY}" = "3" ] && break
+            sleep 1
+          done
+          HEALTHY=$(curl -sf http://localhost:9090/metrics \
+            | awk '/^cluster_healthy_nodes / {print $2}')
+          [ "${HEALTHY}" = "3" ] || \
+            (echo "ERROR: expected 3 healthy nodes, got ${HEALTHY}" && exit 1)
+        env:
+          METRICS_URL: http://localhost:9090/metrics
+
+      # Run the chaos test script
+      - name: Run chaos test
+        run: |
+          bash docker/cluster/chaos_test.sh
+        timeout-minutes: 5
+        env:
+          COMPOSE_FILE: docker/cluster/docker-compose.yml
+          METRICS_URL: http://localhost:9090/metrics
+          CONTROLLER_GRPC: localhost:50051
+
+      # Collect logs on success or failure for post-mortem
+      - name: Collect container logs
+        if: always()
+        run: |
+          docker compose -f docker/cluster/docker-compose.yml \
+            logs --no-color > chaos_logs.txt 2>&1
+
+      - name: Upload chaos logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-cluster-logs
+          path: chaos_logs.txt
+          retention-days: 7
+
+      # Always tear down the cluster, even on failure
+      - name: Teardown cluster
+        if: always()
+        run: |
+          docker compose -f docker/cluster/docker-compose.yml down -v --remove-orphans

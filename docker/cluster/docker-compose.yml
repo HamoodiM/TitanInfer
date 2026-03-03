@@ -1,0 +1,117 @@
+name: titaninfer-cluster
+
+services:
+
+  # ---- ClusterController gRPC server ----------------------------------------
+  controller:
+    build:
+      context: ../..
+      dockerfile: docker/cluster/Dockerfile.controller
+    ports:
+      - "50051:50051"  # gRPC
+      - "9090:9090"    # Prometheus /metrics
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    environment:
+      CONTROLLER_PORT: "50051"
+      METRICS_PORT: "9090"
+
+  # ---- ModelServer nodes (3 replicas) ----------------------------------------
+  node1:
+    build:
+      context: ../..
+      dockerfile: docker/cluster/Dockerfile.node
+    environment:
+      NODE_ID: node1
+      CONTROLLER_ADDR: controller:50051
+      MODEL_PATH: /models/test.titan
+      MODEL_NAME: default
+      NODE_HTTP_PORT: "8080"
+    volumes:
+      - models:/models:ro
+    ports:
+      - "8081:8080"
+    depends_on:
+      controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  node2:
+    build:
+      context: ../..
+      dockerfile: docker/cluster/Dockerfile.node
+    environment:
+      NODE_ID: node2
+      CONTROLLER_ADDR: controller:50051
+      MODEL_PATH: /models/test.titan
+      MODEL_NAME: default
+      NODE_HTTP_PORT: "8080"
+    volumes:
+      - models:/models:ro
+    ports:
+      - "8082:8080"
+    depends_on:
+      controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  node3:
+    build:
+      context: ../..
+      dockerfile: docker/cluster/Dockerfile.node
+    environment:
+      NODE_ID: node3
+      CONTROLLER_ADDR: controller:50051
+      MODEL_PATH: /models/test.titan
+      MODEL_NAME: default
+      NODE_HTTP_PORT: "8080"
+    volumes:
+      - models:/models:ro
+    ports:
+      - "8083:8080"
+    depends_on:
+      controller:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/localhost/8080"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  # ---- Load generator (Python — lightweight) ---------------------------------
+  loadgen:
+    image: python:3.11-slim
+    entrypoint: ["python3", "/loadgen.py"]
+    volumes:
+      - ./loadgen.py:/loadgen.py:ro
+    environment:
+      CONTROLLER_ADDR: controller:50051
+      METRICS_URL: "http://controller:9090/metrics"
+    depends_on:
+      controller:
+        condition: service_healthy
+      node1:
+        condition: service_started
+      node2:
+        condition: service_started
+      node3:
+        condition: service_started
+
+volumes:
+  models:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${MODEL_DIR:-/tmp/titaninfer_models}"

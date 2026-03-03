@@ -54,6 +54,9 @@ titaninfer_add_test(conv_serialization_test io/conv_serialization_test.cpp)
 # Phase 11 tests
 titaninfer_add_test(model_server_test      engine/test_model_server.cpp)
 
+# Phase 12 tests
+titaninfer_add_test(cluster_controller_test engine/test_cluster_controller.cpp)
+
 # SIMD-only test and benchmark
 if(SIMD_AVAILABLE)
     titaninfer_add_test(matrix_ops_simd_test ops/matrix_ops_simd_test.cpp)

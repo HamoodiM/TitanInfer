@@ -4,7 +4,7 @@ project(TitanInfer VERSION 0.1.0 LANGUAGES C CXX)
 # ============================================================
 # Compiler Requirements
 # ============================================================
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -55,6 +55,9 @@ option(BUILD_EXAMPLES "Build example executables" ON)
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+option(USE_GRPC "Build gRPC cluster server binaries (requires libgrpc++-dev)" OFF)
+add_subdirectory(bin)
 
 # ============================================================
 # Installation

@@ -1,0 +1,53 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # --------------------------------------------------------------------------
+  # clang-format: check Phase 12 source files
+  # --------------------------------------------------------------------------
+  format:
+    name: clang-format
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format-14
+        run: sudo apt-get update && sudo apt-get install -y clang-format-14
+
+      - name: Check formatting (Phase 12 files)
+        run: |
+          clang-format-14 --dry-run --Werror \
+            include/titaninfer/engine/cluster_controller.hpp \
+            src/engine/cluster_controller.cpp \
+            tests/engine/test_cluster_controller.cpp
+
+  # --------------------------------------------------------------------------
+  # cppcheck: static analysis across all library headers and sources
+  # --------------------------------------------------------------------------
+  static-analysis:
+    name: cppcheck
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck \
+            --enable=warning,performance,portability \
+            --error-exitcode=1 \
+            --suppress=missingInclude \
+            --suppress=missingIncludeSystem \
+            --std=c++20 \
+            --inline-suppr \
+            include/titaninfer/ \
+            src/
