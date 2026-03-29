@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake \
         git \
         g++-11 \
+        pkg-config \
         libgrpc++-dev \
         protobuf-compiler \
         protobuf-compiler-grpc \
