@@ -14,11 +14,11 @@ namespace titaninfer::engine {
 // ---------------------------------------------------------------------------
 
 struct NodeMetrics {
-    double queue_depth     = 0.0;  ///< Pending requests
-    double p95_latency_ms  = 0.0;  ///< 95th-percentile latency (ms)
-    double cpu_util        = 0.0;  ///< CPU utilization [0, 1]
-    double memory_pressure = 0.0;  ///< Memory utilization [0, 1]
-    size_t active_requests = 0;    ///< In-flight request count
+    double                                queue_depth     = 0.0; ///< Pending requests
+    double                                p95_latency_ms  = 0.0; ///< 95th-percentile latency (ms)
+    double                                cpu_util        = 0.0; ///< CPU utilization [0, 1]
+    double                                memory_pressure = 0.0; ///< Memory utilization [0, 1]
+    size_t                                active_requests = 0;   ///< In-flight request count
     std::chrono::steady_clock::time_point timestamp;
 };
 
@@ -27,10 +27,10 @@ struct NodeMetrics {
 // ---------------------------------------------------------------------------
 
 struct NodeInfo {
-    std::string node_id;
-    std::string address;  ///< "host:port" for external routing
+    std::string                                  node_id;
+    std::string                                  address; ///< "host:port" for external routing
     std::unordered_map<std::string, NodeMetrics> model_metrics;
-    bool healthy = true;
+    bool                                         healthy = true;
 };
 
 // ---------------------------------------------------------------------------
@@ -38,10 +38,10 @@ struct NodeInfo {
 // ---------------------------------------------------------------------------
 
 struct RoutingDecision {
-    std::string target_node_id;
-    double confidence_score = 0.0;    ///< [0,1] routing quality signal
-    std::string trace_id;             ///< 128-bit hex (OTEL-compatible)
-    std::optional<std::string> error; ///< Backpressure reason (empty = success)
+    std::string                target_node_id;
+    double                     confidence_score = 0.0; ///< [0,1] routing quality signal
+    std::string                trace_id;               ///< 128-bit hex (OTEL-compatible)
+    std::optional<std::string> error;                  ///< Backpressure reason (empty = success)
 };
 
 // ---------------------------------------------------------------------------
@@ -50,9 +50,9 @@ struct RoutingDecision {
 
 struct ScaleRecommendation {
     std::string model_name;
-    int delta_replicas    = 0;   ///< +N = scale up, -N = scale down
+    int         delta_replicas = 0; ///< +N = scale up, -N = scale down
     std::string justification;
-    double trigger_metric = 0.0; ///< The metric that crossed the SLO
+    double      trigger_metric = 0.0; ///< The metric that crossed the SLO
 };
 
 // ---------------------------------------------------------------------------
@@ -78,9 +78,9 @@ struct ClusterControllerConfig {
 // ---------------------------------------------------------------------------
 
 class ClusterController {
-public:
+  public:
     class Builder {
-    public:
+      public:
         Builder() = default;
 
         Builder& setHeartbeatTimeoutMs(size_t ms);
@@ -92,14 +92,14 @@ public:
 
         ClusterController build();
 
-    private:
+      private:
         ClusterControllerConfig config_;
     };
 
     ~ClusterController();
     ClusterController(ClusterController&&) noexcept;
     ClusterController& operator=(ClusterController&&) noexcept;
-    ClusterController(const ClusterController&) = delete;
+    ClusterController(const ClusterController&)            = delete;
     ClusterController& operator=(const ClusterController&) = delete;
 
     // ---- Node Lifecycle ------------------------------------------------
@@ -109,7 +109,7 @@ public:
 
     /// Update per-model metrics for an existing node and mark it healthy.
     /// Silently ignored if node_id is unknown.
-    void heartbeat(const std::string& node_id,
+    void heartbeat(const std::string&                                  node_id,
                    const std::unordered_map<std::string, NodeMetrics>& metrics);
 
     /// Remove a node from the registry and clear its circuit breakers.
@@ -119,8 +119,7 @@ public:
 
     /// Power-of-two random choices with tenant-affinity tiebreaking.
     /// Returns a RoutingDecision; decision.error is set on failure.
-    RoutingDecision schedule(const std::string& model_name,
-                             const std::string& tenant_id = "");
+    RoutingDecision schedule(const std::string& model_name, const std::string& tenant_id = "");
 
     // ---- Autoscaling ---------------------------------------------------
 
@@ -129,10 +128,8 @@ public:
 
     // ---- Circuit Breaker Feedback --------------------------------------
 
-    void record_success(const std::string& node_id,
-                        const std::string& model_name);
-    void record_failure(const std::string& node_id,
-                        const std::string& model_name);
+    void record_success(const std::string& node_id, const std::string& model_name);
+    void record_failure(const std::string& node_id, const std::string& model_name);
 
     // ---- Observability -------------------------------------------------
 
@@ -140,9 +137,9 @@ public:
     std::string metrics_text() const;
 
     std::vector<NodeInfo> list_nodes() const;
-    size_t healthy_node_count() const;
+    size_t                healthy_node_count() const;
 
-private:
+  private:
     explicit ClusterController(const ClusterControllerConfig& config);
 
     struct Impl;

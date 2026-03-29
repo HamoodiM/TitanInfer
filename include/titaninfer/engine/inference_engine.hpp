@@ -1,13 +1,13 @@
 #pragma once
 
-#include "titaninfer/tensor.hpp"
-#include "titaninfer/layers/sequential.hpp"
 #include "titaninfer/io/model_parser.hpp"
+#include "titaninfer/layers/sequential.hpp"
+#include "titaninfer/tensor.hpp"
+#include <chrono>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
-#include <chrono>
-#include <cstddef>
 
 namespace titaninfer {
 namespace engine {
@@ -16,11 +16,11 @@ namespace engine {
  * @brief Profiling statistics for inference calls
  */
 struct InferenceStats {
-    size_t inference_count = 0;
-    double total_time_ms = 0.0;
-    double min_latency_ms = 0.0;
-    double max_latency_ms = 0.0;
-    double mean_latency_ms = 0.0;
+    size_t              inference_count = 0;
+    double              total_time_ms   = 0.0;
+    double              min_latency_ms  = 0.0;
+    double              max_latency_ms  = 0.0;
+    double              mean_latency_ms = 0.0;
     std::vector<double> layer_times_ms; // per-layer cumulative time (ms)
 };
 
@@ -42,14 +42,14 @@ struct InferenceStats {
  *   Tensor result = engine.predict(input);
  */
 class InferenceEngine {
-public:
+  public:
     class Builder;
 
     InferenceEngine(InferenceEngine&&) noexcept;
     InferenceEngine& operator=(InferenceEngine&&) noexcept;
     ~InferenceEngine();
 
-    InferenceEngine(const InferenceEngine&) = delete;
+    InferenceEngine(const InferenceEngine&)            = delete;
     InferenceEngine& operator=(const InferenceEngine&) = delete;
 
     /**
@@ -101,27 +101,26 @@ public:
      */
     size_t layer_count() const;
 
-private:
+  private:
     InferenceEngine();
 
-    void load_model(const std::string& filepath,
-                    const std::vector<size_t>& input_shape);
+    void load_model(const std::string& filepath, const std::vector<size_t>& input_shape);
     void allocate_buffers();
     void warmup(size_t num_runs);
     void validate_input(const Tensor& input) const;
 
     std::unique_ptr<layers::Sequential> model_;
-    std::vector<size_t> input_shape_;
-    std::vector<Tensor> buffers_;
-    bool profiling_enabled_;
-    InferenceStats stats_;
+    std::vector<size_t>                 input_shape_;
+    std::vector<Tensor>                 buffers_;
+    bool                                profiling_enabled_;
+    InferenceStats                      stats_;
 };
 
 /**
  * @brief Builder for InferenceEngine configuration
  */
 class InferenceEngine::Builder {
-public:
+  public:
     Builder();
 
     /** @brief Set path to .titan model file (required) */
@@ -144,10 +143,10 @@ public:
      */
     InferenceEngine build();
 
-private:
-    std::string model_path_;
-    bool profiling_enabled_;
-    size_t warmup_runs_;
+  private:
+    std::string         model_path_;
+    bool                profiling_enabled_;
+    size_t              warmup_runs_;
     std::vector<size_t> input_shape_;
 };
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "titaninfer/tensor.hpp"
 #include "titaninfer/layers/sequential.hpp"
+#include "titaninfer/tensor.hpp"
 
 #include <chrono>
 #include <condition_variable>
@@ -16,7 +16,7 @@ namespace engine {
 
 struct BatcherConfig {
     size_t max_batch_size = 32;
-    size_t max_wait_ms = 10;
+    size_t max_wait_ms    = 10;
 };
 
 /**
@@ -26,40 +26,39 @@ struct BatcherConfig {
  * batch sizes. Uses a dedicated background thread to form batches.
  */
 class DynamicBatcher {
-public:
+  public:
     /**
      * @param model Borrowed reference to Sequential model (caller keeps alive)
      * @param input_shape Shape of a single input sample
      * @param config Batching configuration
      */
-    DynamicBatcher(layers::Sequential& model,
-                   const std::vector<size_t>& input_shape,
+    DynamicBatcher(layers::Sequential& model, const std::vector<size_t>& input_shape,
                    const BatcherConfig& config = {});
     ~DynamicBatcher();
 
-    DynamicBatcher(const DynamicBatcher&) = delete;
+    DynamicBatcher(const DynamicBatcher&)            = delete;
     DynamicBatcher& operator=(const DynamicBatcher&) = delete;
 
     /// Submit a single input for inference, returns future for result
     std::future<Tensor> submit(Tensor input);
 
-private:
+  private:
     void batcher_loop();
 
     struct Request {
-        Tensor input;
+        Tensor               input;
         std::promise<Tensor> promise;
     };
 
     layers::Sequential& model_;
     std::vector<size_t> input_shape_;
-    BatcherConfig config_;
+    BatcherConfig       config_;
 
-    std::queue<Request> queue_;
-    std::mutex mutex_;
+    std::queue<Request>     queue_;
+    std::mutex              mutex_;
     std::condition_variable cv_;
-    bool stop_;
-    std::thread thread_;
+    bool                    stop_;
+    std::thread             thread_;
 };
 
 } // namespace engine

@@ -13,8 +13,7 @@ namespace ops {
  * Output is in float32 with scale correction applied.
  * Uses AVX2 acceleration when available.
  */
-void gemm_int8(const QuantizedTensor& A, const QuantizedTensor& B,
-               Tensor& C);
+void gemm_int8(const QuantizedTensor& A, const QuantizedTensor& B, Tensor& C);
 
 } // namespace ops
 } // namespace titaninfer

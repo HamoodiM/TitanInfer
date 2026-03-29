@@ -8,7 +8,7 @@ on:
 
 jobs:
   # --------------------------------------------------------------------------
-  # clang-format: check Phase 12 source files
+  # clang-format: enforce formatting on all library headers and sources
   # --------------------------------------------------------------------------
   format:
     name: clang-format
@@ -20,15 +20,10 @@ jobs:
       - name: Install clang-format-14
         run: sudo apt-get update && sudo apt-get install -y clang-format-14
 
-      - name: Check formatting (Phase 12 files)
-        # --dry-run without --Werror: reports diffs but does not fail CI.
-        # Add --Werror once all Phase 12 files have been run through
-        # "clang-format-14 -i" and committed.
+      - name: Check formatting (all library sources)
         run: |
-          clang-format-14 --dry-run \
-            include/titaninfer/engine/cluster_controller.hpp \
-            src/engine/cluster_controller.cpp \
-            tests/engine/test_cluster_controller.cpp
+          find include/titaninfer src -name '*.hpp' -o -name '*.cpp' \
+            | xargs clang-format-14 --dry-run --Werror
 
   # --------------------------------------------------------------------------
   # cppcheck: static analysis across all library headers and sources

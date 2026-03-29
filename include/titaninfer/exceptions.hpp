@@ -10,20 +10,20 @@ namespace titaninfer {
  */
 enum class ErrorCode : int {
     // General
-    UNKNOWN           = 0,
+    UNKNOWN = 0,
 
     // Model loading errors (100-199)
-    FILE_NOT_FOUND    = 100,
-    INVALID_FORMAT    = 101,
-    EMPTY_MODEL       = 102,
+    FILE_NOT_FOUND = 100,
+    INVALID_FORMAT = 101,
+    EMPTY_MODEL    = 102,
 
     // Inference errors (200-299)
-    NO_MODEL_LOADED   = 200,
-    SHAPE_MISMATCH    = 201,
-    NAN_INPUT         = 202,
+    NO_MODEL_LOADED = 200,
+    SHAPE_MISMATCH  = 201,
+    NAN_INPUT       = 202,
 
     // Internal errors (300-399)
-    INTERNAL_ERROR    = 300,
+    INTERNAL_ERROR = 300,
 
     // Server errors (400-499)
     MODEL_NOT_FOUND   = 400,
@@ -40,14 +40,13 @@ enum class ErrorCode : int {
  * blocks continue to work. Adds a machine-readable error_code().
  */
 class TitanInferException : public std::runtime_error {
-public:
-    explicit TitanInferException(const std::string& msg,
-                                 ErrorCode code = ErrorCode::UNKNOWN)
+  public:
+    explicit TitanInferException(const std::string& msg, ErrorCode code = ErrorCode::UNKNOWN)
         : std::runtime_error(msg), code_(code) {}
 
     ErrorCode error_code() const noexcept { return code_; }
 
-private:
+  private:
     ErrorCode code_;
 };
 
@@ -55,9 +54,8 @@ private:
  * @brief Thrown when a model file cannot be loaded
  */
 class ModelLoadException : public TitanInferException {
-public:
-    explicit ModelLoadException(const std::string& msg,
-                                ErrorCode code = ErrorCode::FILE_NOT_FOUND)
+  public:
+    explicit ModelLoadException(const std::string& msg, ErrorCode code = ErrorCode::FILE_NOT_FOUND)
         : TitanInferException(msg, code) {}
 };
 
@@ -65,9 +63,8 @@ public:
  * @brief Thrown when inference fails at runtime
  */
 class InferenceException : public TitanInferException {
-public:
-    explicit InferenceException(const std::string& msg,
-                                ErrorCode code = ErrorCode::NO_MODEL_LOADED)
+  public:
+    explicit InferenceException(const std::string& msg, ErrorCode code = ErrorCode::NO_MODEL_LOADED)
         : TitanInferException(msg, code) {}
 };
 
@@ -75,9 +72,8 @@ public:
  * @brief Thrown when input validation fails (shape mismatch, NaN, etc.)
  */
 class ValidationException : public TitanInferException {
-public:
-    explicit ValidationException(const std::string& msg,
-                                 ErrorCode code = ErrorCode::SHAPE_MISMATCH)
+  public:
+    explicit ValidationException(const std::string& msg, ErrorCode code = ErrorCode::SHAPE_MISMATCH)
         : TitanInferException(msg, code) {}
 };
 
@@ -85,9 +81,8 @@ public:
  * @brief Thrown when a model server operation fails
  */
 class ServerException : public TitanInferException {
-public:
-    explicit ServerException(const std::string& msg,
-                             ErrorCode code = ErrorCode::INTERNAL_ERROR)
+  public:
+    explicit ServerException(const std::string& msg, ErrorCode code = ErrorCode::INTERNAL_ERROR)
         : TitanInferException(msg, code) {}
 };
 

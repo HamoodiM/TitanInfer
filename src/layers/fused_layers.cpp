@@ -13,13 +13,8 @@ namespace layers {
 // ========================================
 
 FusedDenseReluLayer::FusedDenseReluLayer(const DenseLayer& dense)
-    : in_features_(dense.in_features())
-    , out_features_(dense.out_features())
-    , use_bias_(dense.has_bias())
-    , weights_(dense.weights())
-    , bias_(dense.bias())
-{
-}
+    : in_features_(dense.in_features()), out_features_(dense.out_features()),
+      use_bias_(dense.has_bias()), weights_(dense.weights()), bias_(dense.bias()) {}
 
 std::unique_ptr<Layer> FusedDenseReluLayer::clone() const {
     // Reconstruct from a temporary DenseLayer
@@ -75,20 +70,23 @@ void FusedDenseReluLayer::forward(const Tensor& input, Tensor& output) {
 }
 
 std::string FusedDenseReluLayer::name() const {
-    return "FusedDenseReLU(" + std::to_string(in_features_) + ", " +
-           std::to_string(out_features_) + ")";
+    return "FusedDenseReLU(" + std::to_string(in_features_) + ", " + std::to_string(out_features_) +
+           ")";
 }
 
 size_t FusedDenseReluLayer::parameter_count() const {
     size_t count = out_features_ * in_features_;
-    if (use_bias_) count += out_features_;
+    if (use_bias_)
+        count += out_features_;
     return count;
 }
 
-std::vector<size_t> FusedDenseReluLayer::output_shape(
-    const std::vector<size_t>& input_shape) const {
-    if (input_shape.size() == 1) return {out_features_};
-    if (input_shape.size() == 2) return {input_shape[0], out_features_};
+std::vector<size_t>
+FusedDenseReluLayer::output_shape(const std::vector<size_t>& input_shape) const {
+    if (input_shape.size() == 1)
+        return {out_features_};
+    if (input_shape.size() == 2)
+        return {input_shape[0], out_features_};
     throw std::invalid_argument("FusedDenseReluLayer::output_shape: expected 1D or 2D");
 }
 
@@ -97,13 +95,8 @@ std::vector<size_t> FusedDenseReluLayer::output_shape(
 // ========================================
 
 FusedDenseSigmoidLayer::FusedDenseSigmoidLayer(const DenseLayer& dense)
-    : in_features_(dense.in_features())
-    , out_features_(dense.out_features())
-    , use_bias_(dense.has_bias())
-    , weights_(dense.weights())
-    , bias_(dense.bias())
-{
-}
+    : in_features_(dense.in_features()), out_features_(dense.out_features()),
+      use_bias_(dense.has_bias()), weights_(dense.weights()), bias_(dense.bias()) {}
 
 std::unique_ptr<Layer> FusedDenseSigmoidLayer::clone() const {
     DenseLayer temp(in_features_, out_features_, use_bias_);
@@ -162,14 +155,17 @@ std::string FusedDenseSigmoidLayer::name() const {
 
 size_t FusedDenseSigmoidLayer::parameter_count() const {
     size_t count = out_features_ * in_features_;
-    if (use_bias_) count += out_features_;
+    if (use_bias_)
+        count += out_features_;
     return count;
 }
 
-std::vector<size_t> FusedDenseSigmoidLayer::output_shape(
-    const std::vector<size_t>& input_shape) const {
-    if (input_shape.size() == 1) return {out_features_};
-    if (input_shape.size() == 2) return {input_shape[0], out_features_};
+std::vector<size_t>
+FusedDenseSigmoidLayer::output_shape(const std::vector<size_t>& input_shape) const {
+    if (input_shape.size() == 1)
+        return {out_features_};
+    if (input_shape.size() == 2)
+        return {input_shape[0], out_features_};
     throw std::invalid_argument("FusedDenseSigmoidLayer::output_shape: expected 1D or 2D");
 }
 

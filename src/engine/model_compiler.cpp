@@ -42,19 +42,20 @@ Tensor CompiledModel::predict(const Tensor& input) {
 }
 
 std::string CompiledModel::summary() const {
-    if (!model_) return "(no model)";
+    if (!model_)
+        return "(no model)";
     return model_->summary(input_shape_);
 }
 
 size_t CompiledModel::layer_count() const {
-    if (!model_) return 0;
+    if (!model_)
+        return 0;
     return model_->size();
 }
 
-CompiledModel ModelCompiler::compile(
-    const layers::Sequential& model,
-    const std::vector<size_t>& input_shape,
-    const CompileOptions& options) {
+CompiledModel ModelCompiler::compile(const layers::Sequential&  model,
+                                     const std::vector<size_t>& input_shape,
+                                     const CompileOptions&      options) {
 
     if (model.empty()) {
         throw std::invalid_argument("ModelCompiler: empty model");

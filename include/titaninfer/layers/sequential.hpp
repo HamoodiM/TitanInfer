@@ -2,8 +2,8 @@
 
 #include "titaninfer/layers/layer.hpp"
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace titaninfer {
 namespace layers {
@@ -15,7 +15,7 @@ namespace layers {
  * Owns all layers via unique_ptr for automatic lifecycle management.
  */
 class Sequential {
-public:
+  public:
     Sequential() = default;
 
     /**
@@ -47,13 +47,13 @@ public:
     bool empty() const { return layers_.empty(); }
 
     /** @brief Access a layer by index (non-owning reference) */
-    Layer& layer(size_t index);
+    Layer&       layer(size_t index);
     const Layer& layer(size_t index) const;
 
     /** @brief Total parameter count across all layers */
     size_t total_parameters() const;
 
-private:
+  private:
     std::vector<std::unique_ptr<Layer>> layers_;
 };
 

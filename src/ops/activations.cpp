@@ -1,6 +1,6 @@
 #include "titaninfer/ops/activations.hpp"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 
@@ -16,9 +16,9 @@ void relu(const Tensor& input, Tensor& output) {
         output = Tensor(input.shape());
     }
 
-    const size_t n = input.size();
-    const float* in = input.data();
-    float* out = output.data();
+    const size_t n   = input.size();
+    const float* in  = input.data();
+    float*       out = output.data();
 
     for (size_t i = 0; i < n; ++i) {
         out[i] = std::max(0.0f, in[i]);
@@ -26,8 +26,8 @@ void relu(const Tensor& input, Tensor& output) {
 }
 
 void relu_inplace(Tensor& input) {
-    const size_t n = input.size();
-    float* data = input.data();
+    const size_t n    = input.size();
+    float*       data = input.data();
 
     for (size_t i = 0; i < n; ++i) {
         data[i] = std::max(0.0f, data[i]);
@@ -43,9 +43,9 @@ void sigmoid(const Tensor& input, Tensor& output) {
         output = Tensor(input.shape());
     }
 
-    const size_t n = input.size();
-    const float* in = input.data();
-    float* out = output.data();
+    const size_t n   = input.size();
+    const float* in  = input.data();
+    float*       out = output.data();
 
     for (size_t i = 0; i < n; ++i) {
         out[i] = 1.0f / (1.0f + std::exp(-in[i]));
@@ -53,8 +53,8 @@ void sigmoid(const Tensor& input, Tensor& output) {
 }
 
 void sigmoid_inplace(Tensor& input) {
-    const size_t n = input.size();
-    float* data = input.data();
+    const size_t n    = input.size();
+    float*       data = input.data();
 
     for (size_t i = 0; i < n; ++i) {
         data[i] = 1.0f / (1.0f + std::exp(-data[i]));
@@ -70,9 +70,9 @@ void tanh_activation(const Tensor& input, Tensor& output) {
         output = Tensor(input.shape());
     }
 
-    const size_t n = input.size();
-    const float* in = input.data();
-    float* out = output.data();
+    const size_t n   = input.size();
+    const float* in  = input.data();
+    float*       out = output.data();
 
     for (size_t i = 0; i < n; ++i) {
         out[i] = std::tanh(in[i]);
@@ -80,8 +80,8 @@ void tanh_activation(const Tensor& input, Tensor& output) {
 }
 
 void tanh_inplace(Tensor& input) {
-    const size_t n = input.size();
-    float* data = input.data();
+    const size_t n    = input.size();
+    float*       data = input.data();
 
     for (size_t i = 0; i < n; ++i) {
         data[i] = std::tanh(data[i]);
@@ -114,18 +114,16 @@ static void softmax_1d(const float* in, float* out, size_t n) {
 
 void softmax(const Tensor& input, Tensor& output) {
     if (input.ndim() > 2) {
-        throw std::invalid_argument(
-            "softmax supports 1D and 2D tensors only, got " +
-            std::to_string(input.ndim()) + "D"
-        );
+        throw std::invalid_argument("softmax supports 1D and 2D tensors only, got " +
+                                    std::to_string(input.ndim()) + "D");
     }
 
     if (output.shape() != input.shape()) {
         output = Tensor(input.shape());
     }
 
-    const float* in = input.data();
-    float* out = output.data();
+    const float* in  = input.data();
+    float*       out = output.data();
 
     if (input.ndim() == 1) {
         softmax_1d(in, out, input.size());

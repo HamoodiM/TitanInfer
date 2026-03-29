@@ -1,13 +1,13 @@
 #pragma once
 
-#include "titaninfer/tensor.hpp"
+#include "titaninfer/engine/inference_engine.hpp"
 #include "titaninfer/exceptions.hpp"
 #include "titaninfer/logger.hpp"
-#include "titaninfer/engine/inference_engine.hpp"
+#include "titaninfer/tensor.hpp"
+#include <cstddef>
 #include <mutex>
 #include <string>
 #include <vector>
-#include <cstddef>
 
 namespace titaninfer {
 
@@ -34,14 +34,14 @@ using InferenceStats = engine::InferenceStats;
  * @endcode
  */
 class ModelHandle {
-public:
+  public:
     class Builder;
 
     ModelHandle(ModelHandle&& other) noexcept;
     ModelHandle& operator=(ModelHandle&& other) noexcept;
     ~ModelHandle();
 
-    ModelHandle(const ModelHandle&) = delete;
+    ModelHandle(const ModelHandle&)            = delete;
     ModelHandle& operator=(const ModelHandle&) = delete;
 
     /**
@@ -93,7 +93,7 @@ public:
      */
     const std::vector<size_t>& expected_input_shape() const;
 
-private:
+  private:
     explicit ModelHandle(engine::InferenceEngine engine);
 
     mutable std::mutex      mutex_;
@@ -104,7 +104,7 @@ private:
  * @brief Fluent builder for ModelHandle configuration
  */
 class ModelHandle::Builder {
-public:
+  public:
     Builder();
 
     /** @brief Set path to .titan model file (required) */
@@ -129,7 +129,7 @@ public:
      */
     ModelHandle build();
 
-private:
+  private:
     std::string         model_path_;
     bool                profiling_enabled_;
     size_t              warmup_runs_;

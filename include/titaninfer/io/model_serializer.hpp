@@ -14,7 +14,7 @@ namespace io {
  * Writes layer types, configurations, and contiguous weight data.
  */
 class ModelSerializer {
-public:
+  public:
     /**
      * @brief Save a Sequential model to a .titan file
      * @param model The model to serialize
@@ -22,10 +22,9 @@ public:
      * @throws std::runtime_error if file cannot be opened for writing
      * @throws std::invalid_argument if model contains unsupported layer types
      */
-    static void save(const layers::Sequential& model,
-                     const std::string& filepath);
+    static void save(const layers::Sequential& model, const std::string& filepath);
 
-private:
+  private:
     /**
      * @brief Determine the LayerType enum for a given layer
      * @param layer The layer to identify

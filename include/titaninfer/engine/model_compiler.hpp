@@ -11,7 +11,7 @@ namespace titaninfer {
 namespace engine {
 
 struct CompileOptions {
-    bool enable_fusion = true;
+    bool enable_fusion       = true;
     bool enable_quantization = false;
 };
 
@@ -21,20 +21,20 @@ struct CompileOptions {
  * Pre-allocates all intermediate buffers for zero-alloc inference.
  */
 class CompiledModel {
-public:
+  public:
     /// Run inference with pre-allocated buffers
     Tensor predict(const Tensor& input);
 
-    std::string summary() const;
+    std::string                summary() const;
     const std::vector<size_t>& input_shape() const { return input_shape_; }
-    size_t layer_count() const;
+    size_t                     layer_count() const;
 
-private:
+  private:
     friend class ModelCompiler;
 
     std::unique_ptr<layers::Sequential> model_;
-    std::vector<size_t> input_shape_;
-    std::vector<Tensor> buffers_;
+    std::vector<size_t>                 input_shape_;
+    std::vector<Tensor>                 buffers_;
 };
 
 /**
@@ -43,11 +43,10 @@ private:
  * Pipeline: clone -> fusion -> quantization -> buffer pre-allocation
  */
 class ModelCompiler {
-public:
-    static CompiledModel compile(
-        const layers::Sequential& model,
-        const std::vector<size_t>& input_shape,
-        const CompileOptions& options = {});
+  public:
+    static CompiledModel compile(const layers::Sequential&  model,
+                                 const std::vector<size_t>& input_shape,
+                                 const CompileOptions&      options = {});
 };
 
 } // namespace engine

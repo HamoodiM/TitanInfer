@@ -5,16 +5,14 @@
 
 struct TitanInferModel_ {
     titaninfer::ModelHandle handle;
-    std::string last_error;
+    std::string             last_error;
 
-    explicit TitanInferModel_(titaninfer::ModelHandle h)
-        : handle(std::move(h)) {}
+    explicit TitanInferModel_(titaninfer::ModelHandle h) : handle(std::move(h)) {}
 };
 
 extern "C" {
 
-TitanInferModelHandle titaninfer_load(const char* model_path,
-                                      const size_t* input_shape,
+TitanInferModelHandle titaninfer_load(const char* model_path, const size_t* input_shape,
                                       size_t shape_len) {
     if (!model_path) {
         return nullptr;
@@ -22,8 +20,8 @@ TitanInferModelHandle titaninfer_load(const char* model_path,
 
     try {
         auto builder = titaninfer::ModelHandle::Builder()
-            .setModelPath(model_path)
-            .setLogLevel(titaninfer::LogLevel::SILENT);
+                           .setModelPath(model_path)
+                           .setLogLevel(titaninfer::LogLevel::SILENT);
 
         if (input_shape && shape_len > 0) {
             std::vector<size_t> shape(input_shape, input_shape + shape_len);
@@ -41,12 +39,8 @@ void titaninfer_free(TitanInferModelHandle handle) {
     delete handle;
 }
 
-int titaninfer_predict(TitanInferModelHandle handle,
-                       const float* input_data,
-                       size_t input_len,
-                       float* output_data,
-                       size_t output_len,
-                       size_t* actual_output_len) {
+int titaninfer_predict(TitanInferModelHandle handle, const float* input_data, size_t input_len,
+                       float* output_data, size_t output_len, size_t* actual_output_len) {
     if (!handle || !input_data || !output_data || !actual_output_len) {
         if (handle) {
             handle->last_error = "null pointer argument";
@@ -55,14 +49,13 @@ int titaninfer_predict(TitanInferModelHandle handle,
     }
 
     try {
-        const auto& shape = handle->handle.expected_input_shape();
+        const auto&        shape = handle->handle.expected_input_shape();
         titaninfer::Tensor input(shape);
 
         // Verify input length matches expected shape
         if (input_len != input.size()) {
-            handle->last_error = "input length " +
-                std::to_string(input_len) + " does not match expected " +
-                std::to_string(input.size());
+            handle->last_error = "input length " + std::to_string(input_len) +
+                                 " does not match expected " + std::to_string(input.size());
             return TITANINFER_ERR_VALIDATION;
         }
 
@@ -72,9 +65,8 @@ int titaninfer_predict(TitanInferModelHandle handle,
 
         *actual_output_len = result.size();
         if (output_len < result.size()) {
-            handle->last_error = "output buffer too small: need " +
-                std::to_string(result.size()) + ", got " +
-                std::to_string(output_len);
+            handle->last_error = "output buffer too small: need " + std::to_string(result.size()) +
+                                 ", got " + std::to_string(output_len);
             return TITANINFER_ERR_INVALID_ARG;
         }
 

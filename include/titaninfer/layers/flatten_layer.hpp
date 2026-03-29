@@ -13,14 +13,13 @@ namespace layers {
  * Data is contiguous in row-major, so this is a memcpy + shape change.
  */
 class FlattenLayer : public Layer {
-public:
+  public:
     FlattenLayer() = default;
 
     std::unique_ptr<Layer> clone() const override;
-    void forward(const Tensor& input, Tensor& output) override;
-    std::string name() const override;
-    std::vector<size_t> output_shape(
-        const std::vector<size_t>& input_shape) const override;
+    void                   forward(const Tensor& input, Tensor& output) override;
+    std::string            name() const override;
+    std::vector<size_t>    output_shape(const std::vector<size_t>& input_shape) const override;
 };
 
 } // namespace layers

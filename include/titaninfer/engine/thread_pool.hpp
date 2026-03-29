@@ -19,7 +19,7 @@ namespace engine {
  * Non-copyable, non-movable (owns threads and mutex).
  */
 class ThreadPool {
-public:
+  public:
     /**
      * @brief Construct thread pool
      * @param num_threads Number of worker threads (0 = hardware_concurrency, min 1)
@@ -28,22 +28,20 @@ public:
 
     ~ThreadPool();
 
-    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool(const ThreadPool&)            = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
     /**
      * @brief Submit a callable for async execution
      * @return std::future for the result
      */
-    template<typename F, typename... Args>
+    template <typename F, typename... Args>
     auto submit(F&& f, Args&&... args)
-        -> std::future<typename std::invoke_result<F, Args...>::type>
-    {
+        -> std::future<typename std::invoke_result<F, Args...>::type> {
         using R = typename std::invoke_result<F, Args...>::type;
 
         auto task = std::make_shared<std::packaged_task<R()>>(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-        );
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
         std::future<R> result = task->get_future();
 
@@ -61,12 +59,12 @@ public:
 
     size_t thread_count() const noexcept { return workers_.size(); }
 
-private:
-    std::vector<std::thread> workers_;
+  private:
+    std::vector<std::thread>          workers_;
     std::queue<std::function<void()>> tasks_;
-    std::mutex mutex_;
-    std::condition_variable condition_;
-    bool stop_;
+    std::mutex                        mutex_;
+    std::condition_variable           condition_;
+    bool                              stop_;
 };
 
 } // namespace engine

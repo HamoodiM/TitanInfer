@@ -1,6 +1,6 @@
 #include "titaninfer/layers/sequential.hpp"
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
 
 namespace titaninfer {
@@ -46,13 +46,13 @@ std::string Sequential::summary(const std::vector<size_t>& input_shape) const {
     std::ostringstream oss;
 
     oss << "================================================================\n";
-    oss << std::left << std::setw(25) << "Layer"
-        << std::setw(25) << "Output Shape"
-        << std::right << std::setw(12) << "Parameters" << "\n";
+    oss << std::left << std::setw(25) << "Layer" << std::setw(25) << "Output Shape" << std::right
+        << std::setw(12) << "Parameters"
+        << "\n";
     oss << "================================================================\n";
 
     std::vector<size_t> current_shape = input_shape;
-    size_t total_params = 0;
+    size_t              total_params  = 0;
 
     for (size_t i = 0; i < layers_.size(); ++i) {
         current_shape = layers_[i]->output_shape(current_shape);
@@ -61,13 +61,13 @@ std::string Sequential::summary(const std::vector<size_t>& input_shape) const {
 
         std::string shape_str = "(";
         for (size_t d = 0; d < current_shape.size(); ++d) {
-            if (d > 0) shape_str += ", ";
+            if (d > 0)
+                shape_str += ", ";
             shape_str += std::to_string(current_shape[d]);
         }
         shape_str += ")";
 
-        oss << std::left << std::setw(25) << layers_[i]->name()
-            << std::setw(25) << shape_str
+        oss << std::left << std::setw(25) << layers_[i]->name() << std::setw(25) << shape_str
             << std::right << std::setw(12) << params << "\n";
     }
 
@@ -80,18 +80,16 @@ std::string Sequential::summary(const std::vector<size_t>& input_shape) const {
 
 Layer& Sequential::layer(size_t index) {
     if (index >= layers_.size()) {
-        throw std::out_of_range(
-            "Sequential::layer: index " + std::to_string(index) +
-            " out of range (size " + std::to_string(layers_.size()) + ")");
+        throw std::out_of_range("Sequential::layer: index " + std::to_string(index) +
+                                " out of range (size " + std::to_string(layers_.size()) + ")");
     }
     return *layers_[index];
 }
 
 const Layer& Sequential::layer(size_t index) const {
     if (index >= layers_.size()) {
-        throw std::out_of_range(
-            "Sequential::layer: index " + std::to_string(index) +
-            " out of range (size " + std::to_string(layers_.size()) + ")");
+        throw std::out_of_range("Sequential::layer: index " + std::to_string(index) +
+                                " out of range (size " + std::to_string(layers_.size()) + ")");
     }
     return *layers_[index];
 }

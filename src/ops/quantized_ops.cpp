@@ -11,19 +11,16 @@ namespace ops {
 
 namespace {
 
-void gemm_int8_impl(const int8_t* A, const int8_t* B,
-                    float* C,
-                    size_t M, size_t K, size_t N,
-                    float scale_a, int8_t zp_a,
-                    float scale_b, int8_t zp_b) {
-    const float output_scale = scale_a * scale_b;
-    const int32_t zp_a_32 = static_cast<int32_t>(zp_a);
-    const int32_t zp_b_32 = static_cast<int32_t>(zp_b);
+void gemm_int8_impl(const int8_t* A, const int8_t* B, float* C, size_t M, size_t K, size_t N,
+                    float scale_a, int8_t zp_a, float scale_b, int8_t zp_b) {
+    const float   output_scale = scale_a * scale_b;
+    const int32_t zp_a_32      = static_cast<int32_t>(zp_a);
+    const int32_t zp_b_32      = static_cast<int32_t>(zp_b);
 
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = 0; j < N; ++j) {
             int32_t acc = 0;
-            size_t k = 0;
+            size_t  k   = 0;
 
 #ifdef TITANINFER_ENABLE_SIMD
             // Process 8 elements at a time using int16 widening
@@ -33,16 +30,14 @@ void gemm_int8_impl(const int8_t* A, const int8_t* B,
 
             for (; k + 8 <= K; k += 8) {
                 // Load 8 int8 values from A (contiguous)
-                __m128i a_raw = _mm_loadl_epi64(
-                    reinterpret_cast<const __m128i*>(&A[i * K + k]));
+                __m128i a_raw = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(&A[i * K + k]));
 
                 // Load 8 int8 values from B (scattered column access)
                 int8_t b_vals[8];
                 for (size_t kk = 0; kk < 8; ++kk) {
                     b_vals[kk] = B[(k + kk) * N + j];
                 }
-                __m128i b_raw = _mm_loadl_epi64(
-                    reinterpret_cast<const __m128i*>(b_vals));
+                __m128i b_raw = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(b_vals));
 
                 // Sign-extend int8 -> int16
                 __m128i a16 = _mm_cvtepi8_epi16(a_raw);
@@ -75,14 +70,12 @@ void gemm_int8_impl(const int8_t* A, const int8_t* B,
 
 } // anonymous namespace
 
-void gemm_int8(const QuantizedTensor& A, const QuantizedTensor& B,
-               Tensor& C) {
+void gemm_int8(const QuantizedTensor& A, const QuantizedTensor& B, Tensor& C) {
     if (A.ndim() != 2 || B.ndim() != 2) {
         throw std::invalid_argument("gemm_int8: A and B must be 2D");
     }
     if (A.shape()[1] != B.shape()[0]) {
-        throw std::invalid_argument(
-            "gemm_int8: inner dimensions must match");
+        throw std::invalid_argument("gemm_int8: inner dimensions must match");
     }
 
     const size_t M = A.shape()[0];
@@ -94,8 +87,8 @@ void gemm_int8(const QuantizedTensor& A, const QuantizedTensor& B,
         C = Tensor(expected);
     }
 
-    gemm_int8_impl(A.data(), B.data(), C.data(), M, K, N,
-                   A.scale(), A.zero_point(), B.scale(), B.zero_point());
+    gemm_int8_impl(A.data(), B.data(), C.data(), M, K, N, A.scale(), A.zero_point(), B.scale(),
+                   B.zero_point());
 }
 
 } // namespace ops

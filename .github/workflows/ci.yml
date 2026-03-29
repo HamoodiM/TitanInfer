@@ -7,94 +7,36 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            compiler: gcc
-            cc: gcc-11
-            cxx: g++-11
-          - os: ubuntu-22.04
-            compiler: clang
-            cc: clang-14
-            cxx: clang++-14
-          - os: windows-latest
-            compiler: msvc
-
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }} (${{ matrix.compiler }})
+  # --------------------------------------------------------------------------
+  # Linux: build and test entirely inside Docker (GCC 11, Ubuntu 22.04).
+  # The Dockerfile builder stage runs cmake + make + ctest as RUN layers.
+  # Any test failure exits the RUN layer non-zero → docker build fails.
+  # --------------------------------------------------------------------------
+  docker-build-and-test:
+    runs-on: ubuntu-22.04
+    name: Docker (GCC 11, Ubuntu 22.04)
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Clang (Ubuntu only)
-        if: matrix.compiler == 'clang'
-        run: sudo apt-get update && sudo apt-get install -y clang-14
+      - name: Build image and run tests
+        run: docker build --target builder -t titaninfer:ci .
 
-      - name: Configure (Unix)
-        if: runner.os != 'Windows'
-        env:
-          CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+  # --------------------------------------------------------------------------
+  # Windows: native MSVC build (Docker-on-Windows is not portable in GHA).
+  # --------------------------------------------------------------------------
+  windows-msvc:
+    runs-on: windows-latest
+    name: Windows (MSVC 2022)
 
-      - name: Configure (Windows)
-        if: runner.os == 'Windows'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
         run: cmake -B build
 
-      - name: Build (Unix)
-        if: runner.os != 'Windows'
-        run: cmake --build build -j $(nproc)
-
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
+      - name: Build
         run: cmake --build build --config Release
 
-      - name: Test (Unix)
-        if: runner.os != 'Windows'
-        run: cd build && ctest --output-on-failure
-
-      - name: Test (Windows)
-        if: runner.os == 'Windows'
+      - name: Test
         run: cd build && ctest --output-on-failure -C Release
-
-      - name: Upload serving test binary (GCC only)
-        if: matrix.compiler == 'gcc'
-        uses: actions/upload-artifact@v4
-        with:
-          name: titaninfer-serving-binary
-          path: build/tests/model_server_test
-          retention-days: 1
-
-  serving-integration:
-    needs: build-and-test
-    runs-on: ubuntu-22.04
-    name: Serving Integration Tests
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download serving test binary
-        uses: actions/download-artifact@v4
-        with:
-          name: titaninfer-serving-binary
-          path: serving-bin/
-
-      - name: Make executable
-        run: chmod +x serving-bin/model_server_test
-
-      - name: Run serving integration tests
-        timeout-minutes: 5
-        run: |
-          serving-bin/model_server_test \
-            --gtest_filter="*Concurrent*:*Integration*:*HotReload*:*TrafficSplit*:*RateLimit*:*Cache*" \
-            --gtest_output=xml:serving_results.xml
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: serving-test-results
-          path: serving_results.xml

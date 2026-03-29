@@ -23,8 +23,7 @@ std::string FlattenLayer::name() const {
     return "Flatten";
 }
 
-std::vector<size_t> FlattenLayer::output_shape(
-    const std::vector<size_t>& input_shape) const {
+std::vector<size_t> FlattenLayer::output_shape(const std::vector<size_t>& input_shape) const {
     if (input_shape.size() <= 1) {
         return input_shape; // Already flat
     }

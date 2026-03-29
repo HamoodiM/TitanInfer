@@ -15,7 +15,7 @@ namespace io {
  * Reconstructs the full model architecture with loaded weights.
  */
 class ModelParser {
-public:
+  public:
     /**
      * @brief Load a Sequential model from a .titan file
      * @param filepath Path to the .titan file
@@ -25,8 +25,7 @@ public:
      * @throws std::runtime_error if layer type ID is unknown
      * @throws std::runtime_error if file ends prematurely (truncated)
      */
-    static std::unique_ptr<layers::Sequential> load(
-        const std::string& filepath);
+    static std::unique_ptr<layers::Sequential> load(const std::string& filepath);
 };
 
 } // namespace io

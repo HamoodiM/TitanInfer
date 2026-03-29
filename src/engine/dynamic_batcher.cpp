@@ -5,16 +5,10 @@
 namespace titaninfer {
 namespace engine {
 
-DynamicBatcher::DynamicBatcher(layers::Sequential& model,
-                               const std::vector<size_t>& input_shape,
+DynamicBatcher::DynamicBatcher(layers::Sequential& model, const std::vector<size_t>& input_shape,
                                const BatcherConfig& config)
-    : model_(model)
-    , input_shape_(input_shape)
-    , config_(config)
-    , stop_(false)
-    , thread_(&DynamicBatcher::batcher_loop, this)
-{
-}
+    : model_(model), input_shape_(input_shape), config_(config), stop_(false),
+      thread_(&DynamicBatcher::batcher_loop, this) {}
 
 DynamicBatcher::~DynamicBatcher() {
     {
@@ -27,7 +21,7 @@ DynamicBatcher::~DynamicBatcher() {
 
 std::future<Tensor> DynamicBatcher::submit(Tensor input) {
     std::promise<Tensor> promise;
-    auto future = promise.get_future();
+    auto                 future = promise.get_future();
 
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -58,8 +52,8 @@ void DynamicBatcher::batcher_loop() {
             }
 
             // Wait up to max_wait_ms to collect more requests
-            auto deadline = std::chrono::steady_clock::now() +
-                std::chrono::milliseconds(config_.max_wait_ms);
+            auto deadline =
+                std::chrono::steady_clock::now() + std::chrono::milliseconds(config_.max_wait_ms);
 
             while (batch.size() < config_.max_batch_size) {
                 if (!queue_.empty()) {
@@ -68,7 +62,7 @@ void DynamicBatcher::batcher_loop() {
                 } else {
                     // Wait for more or timeout
                     if (cv_.wait_until(lock, deadline,
-                            [this] { return stop_ || !queue_.empty(); })) {
+                                       [this] { return stop_ || !queue_.empty(); })) {
                         if (stop_ && queue_.empty()) {
                             break;
                         }
@@ -91,35 +85,31 @@ void DynamicBatcher::batcher_loop() {
                 batch[0].promise.set_value(std::move(result));
             } else {
                 // Stack inputs into batched tensor
-                const size_t N = batch.size();
-                size_t sample_size = 1;
+                const size_t N           = batch.size();
+                size_t       sample_size = 1;
                 for (auto d : input_shape_) {
                     sample_size *= d;
                 }
 
                 std::vector<size_t> batch_shape = {N};
-                batch_shape.insert(batch_shape.end(),
-                                   input_shape_.begin(), input_shape_.end());
+                batch_shape.insert(batch_shape.end(), input_shape_.begin(), input_shape_.end());
                 Tensor batched_input(batch_shape);
 
                 for (size_t i = 0; i < N; ++i) {
-                    std::memcpy(batched_input.data() + i * sample_size,
-                                batch[i].input.data(),
+                    std::memcpy(batched_input.data() + i * sample_size, batch[i].input.data(),
                                 sample_size * sizeof(float));
                 }
 
                 Tensor batched_output = model_.forward(batched_input);
 
                 // Split output
-                size_t out_sample_size = batched_output.size() / N;
-                std::vector<size_t> single_out_shape(
-                    batched_output.shape().begin() + 1,
-                    batched_output.shape().end());
+                size_t              out_sample_size = batched_output.size() / N;
+                std::vector<size_t> single_out_shape(batched_output.shape().begin() + 1,
+                                                     batched_output.shape().end());
 
                 for (size_t i = 0; i < N; ++i) {
                     Tensor result(single_out_shape);
-                    std::memcpy(result.data(),
-                                batched_output.data() + i * out_sample_size,
+                    std::memcpy(result.data(), batched_output.data() + i * out_sample_size,
                                 out_sample_size * sizeof(float));
                     batch[i].promise.set_value(std::move(result));
                 }

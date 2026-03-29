@@ -10,40 +10,40 @@ namespace layers {
  * @brief ReLU activation layer
  */
 class ReluLayer : public Layer {
-public:
+  public:
     std::unique_ptr<Layer> clone() const override;
-    void forward(const Tensor& input, Tensor& output) override;
-    std::string name() const override;
+    void                   forward(const Tensor& input, Tensor& output) override;
+    std::string            name() const override;
 };
 
 /**
  * @brief Sigmoid activation layer
  */
 class SigmoidLayer : public Layer {
-public:
+  public:
     std::unique_ptr<Layer> clone() const override;
-    void forward(const Tensor& input, Tensor& output) override;
-    std::string name() const override;
+    void                   forward(const Tensor& input, Tensor& output) override;
+    std::string            name() const override;
 };
 
 /**
  * @brief Tanh activation layer
  */
 class TanhLayer : public Layer {
-public:
+  public:
     std::unique_ptr<Layer> clone() const override;
-    void forward(const Tensor& input, Tensor& output) override;
-    std::string name() const override;
+    void                   forward(const Tensor& input, Tensor& output) override;
+    std::string            name() const override;
 };
 
 /**
  * @brief Softmax activation layer (1D or 2D only)
  */
 class SoftmaxLayer : public Layer {
-public:
+  public:
     std::unique_ptr<Layer> clone() const override;
-    void forward(const Tensor& input, Tensor& output) override;
-    std::string name() const override;
+    void                   forward(const Tensor& input, Tensor& output) override;
+    std::string            name() const override;
 };
 
 } // namespace layers

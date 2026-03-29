@@ -15,7 +15,7 @@ namespace titaninfer {
  * Uses 32-byte aligned memory for SIMD operations.
  */
 class QuantizedTensor {
-public:
+  public:
     explicit QuantizedTensor(const std::vector<size_t>& shape);
     QuantizedTensor(const QuantizedTensor& other);
     QuantizedTensor(QuantizedTensor&& other) noexcept;
@@ -30,28 +30,28 @@ public:
     /// Dequantize back to FP32
     Tensor dequantize() const;
 
-    int8_t* data() noexcept { return data_; }
+    int8_t*       data() noexcept { return data_; }
     const int8_t* data() const noexcept { return data_; }
 
     const std::vector<size_t>& shape() const noexcept { return shape_; }
-    size_t size() const noexcept { return size_; }
-    size_t ndim() const noexcept { return shape_.size(); }
+    size_t                     size() const noexcept { return size_; }
+    size_t                     ndim() const noexcept { return shape_.size(); }
 
-    float scale() const noexcept { return scale_; }
+    float  scale() const noexcept { return scale_; }
     int8_t zero_point() const noexcept { return zero_point_; }
 
     void set_scale(float s) noexcept { scale_ = s; }
     void set_zero_point(int8_t zp) noexcept { zero_point_ = zp; }
 
-private:
+  private:
     static int8_t* allocate_aligned(size_t num_elements);
-    static void deallocate_aligned(int8_t* ptr);
+    static void    deallocate_aligned(int8_t* ptr);
 
-    int8_t* data_;
+    int8_t*             data_;
     std::vector<size_t> shape_;
-    size_t size_;
-    float scale_;
-    int8_t zero_point_;
+    size_t              size_;
+    float               scale_;
+    int8_t              zero_point_;
 
     static constexpr size_t ALIGNMENT = 32;
 };

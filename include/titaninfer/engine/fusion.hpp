@@ -16,8 +16,7 @@ namespace engine {
  * @param model Source model (unmodified)
  * @return New Sequential with fused layers where applicable
  */
-std::unique_ptr<layers::Sequential> apply_fusion(
-    const layers::Sequential& model);
+std::unique_ptr<layers::Sequential> apply_fusion(const layers::Sequential& model);
 
 } // namespace engine
 } // namespace titaninfer

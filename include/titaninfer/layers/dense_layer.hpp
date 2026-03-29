@@ -17,7 +17,7 @@ namespace layers {
  * - 2D input (batch, in_features) -> 2D output (batch, out_features) via matmul
  */
 class DenseLayer : public Layer {
-public:
+  public:
     /**
      * @brief Construct a dense layer
      * @param in_features Number of input features
@@ -28,11 +28,10 @@ public:
     DenseLayer(size_t in_features, size_t out_features, bool use_bias = true);
 
     std::unique_ptr<Layer> clone() const override;
-    void forward(const Tensor& input, Tensor& output) override;
-    std::string name() const override;
-    size_t parameter_count() const override;
-    std::vector<size_t> output_shape(
-        const std::vector<size_t>& input_shape) const override;
+    void                   forward(const Tensor& input, Tensor& output) override;
+    std::string            name() const override;
+    size_t                 parameter_count() const override;
+    std::vector<size_t>    output_shape(const std::vector<size_t>& input_shape) const override;
 
     /**
      * @brief Set weight matrix
@@ -50,17 +49,17 @@ public:
 
     const Tensor& weights() const { return weights_; }
     const Tensor& bias() const { return bias_; }
-    size_t in_features() const { return in_features_; }
-    size_t out_features() const { return out_features_; }
-    bool has_bias() const { return use_bias_; }
+    size_t        in_features() const { return in_features_; }
+    size_t        out_features() const { return out_features_; }
+    bool          has_bias() const { return use_bias_; }
 
-private:
+  private:
     size_t in_features_;
     size_t out_features_;
-    bool use_bias_;
+    bool   use_bias_;
 
-    Tensor weights_;  // Shape: (out_features_, in_features_)
-    Tensor bias_;     // Shape: (out_features_,)
+    Tensor weights_; // Shape: (out_features_, in_features_)
+    Tensor bias_;    // Shape: (out_features_,)
 };
 
 } // namespace layers

@@ -15,7 +15,7 @@ namespace layers {
  * No backward(), parameters(), or train/eval modes — this is an inference engine.
  */
 class Layer {
-public:
+  public:
     virtual ~Layer() = default;
 
     /**
@@ -47,8 +47,7 @@ public:
      * @param input_shape Shape of the input tensor
      * @return Output shape (identity for shape-preserving layers)
      */
-    virtual std::vector<size_t> output_shape(
-        const std::vector<size_t>& input_shape) const {
+    virtual std::vector<size_t> output_shape(const std::vector<size_t>& input_shape) const {
         return input_shape;
     }
 };

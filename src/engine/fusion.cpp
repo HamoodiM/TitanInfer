@@ -1,16 +1,15 @@
 #include "titaninfer/engine/fusion.hpp"
-#include "titaninfer/layers/dense_layer.hpp"
 #include "titaninfer/layers/activation_layer.hpp"
+#include "titaninfer/layers/dense_layer.hpp"
 #include "titaninfer/layers/fused_layers.hpp"
 
 namespace titaninfer {
 namespace engine {
 
-std::unique_ptr<layers::Sequential> apply_fusion(
-    const layers::Sequential& model) {
+std::unique_ptr<layers::Sequential> apply_fusion(const layers::Sequential& model) {
 
-    auto result = std::make_unique<layers::Sequential>();
-    const size_t n = model.size();
+    auto         result = std::make_unique<layers::Sequential>();
+    const size_t n      = model.size();
 
     size_t i = 0;
     while (i < n) {
