@@ -20,10 +20,34 @@ endif()
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG QUIET)
 if(NOT gRPC_FOUND)
-    # Fallback: find via pkg-config (common on Ubuntu with apt-installed gRPC)
+    # Fallback: find via pkg-config (common on Ubuntu with apt-installed gRPC).
+    # Synthesize gRPC::grpc++ and gRPC::grpc++_reflection IMPORTED targets so
+    # that all downstream target_link_libraries() calls work unchanged.
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GRPC REQUIRED grpc++)
     pkg_check_modules(GRPCPP REQUIRED grpc++>=1.30)
+
+    add_library(gRPC::grpc++ INTERFACE IMPORTED)
+    set_target_properties(gRPC::grpc++ PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${GRPCPP_INCLUDE_DIRS}"
+        INTERFACE_LINK_DIRECTORIES   "${GRPCPP_LIBRARY_DIRS}"
+        INTERFACE_LINK_LIBRARIES     "${GRPCPP_LIBRARIES}"
+        INTERFACE_COMPILE_OPTIONS    "${GRPCPP_CFLAGS_OTHER}"
+    )
+
+    pkg_check_modules(GRPCPP_REFL grpc++_reflection)
+    add_library(gRPC::grpc++_reflection INTERFACE IMPORTED)
+    if(GRPCPP_REFL_FOUND)
+        set_target_properties(gRPC::grpc++_reflection PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${GRPCPP_REFL_INCLUDE_DIRS}"
+            INTERFACE_LINK_DIRECTORIES   "${GRPCPP_REFL_LIBRARY_DIRS}"
+            INTERFACE_LINK_LIBRARIES     "${GRPCPP_REFL_LIBRARIES}"
+        )
+    else()
+        # Library name only — linker will resolve it from GRPCPP dirs above.
+        set_target_properties(gRPC::grpc++_reflection PROPERTIES
+            INTERFACE_LINK_LIBRARIES "grpc++_reflection"
+        )
+    endif()
 endif()
 
 # ---- Proto codegen ---------------------------------------------------------
