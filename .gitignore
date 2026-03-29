@@ -52,7 +52,6 @@ cmake-build-release/
 *.vcxproj*
 
 # Executable outputs
-/bin/
 /lib/
 
 # Test and benchmark outputs
