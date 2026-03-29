@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include "titaninfer/engine/cluster_controller.hpp"
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <atomic>
@@ -17,11 +17,9 @@ using namespace titaninfer::engine;
 // Test helpers
 // ===========================================================================
 
-static NodeMetrics make_metrics(double queue_depth   = 0.0,
-                                double p95_latency   = 10.0,
-                                double cpu_util      = 0.1,
-                                double memory_press  = 0.1,
-                                size_t active_reqs   = 0) {
+static NodeMetrics make_metrics(double queue_depth = 0.0, double p95_latency = 10.0,
+                                double cpu_util = 0.1, double memory_press = 0.1,
+                                size_t active_reqs = 0) {
     NodeMetrics m;
     m.queue_depth     = queue_depth;
     m.p95_latency_ms  = p95_latency;
@@ -32,20 +30,18 @@ static NodeMetrics make_metrics(double queue_depth   = 0.0,
     return m;
 }
 
-static NodeInfo make_node(const std::string& id,
-                           const std::string& model = "resnet50",
-                           double queue = 0.0) {
+static NodeInfo make_node(const std::string& id, const std::string& model = "resnet50",
+                          double queue = 0.0) {
     NodeInfo n;
-    n.node_id = id;
-    n.address = "127.0.0.1:" + id;
-    n.healthy = true;
+    n.node_id              = id;
+    n.address              = "127.0.0.1:" + id;
+    n.healthy              = true;
     n.model_metrics[model] = make_metrics(queue);
     return n;
 }
 
 // Build a minimal controller with fast timeouts for unit tests.
-static ClusterController fast_controller(size_t timeout_ms  = 200,
-                                          size_t interval_ms = 50) {
+static ClusterController fast_controller(size_t timeout_ms = 200, size_t interval_ms = 50) {
     return ClusterController::Builder()
         .setHeartbeatTimeoutMs(timeout_ms)
         .setHeartbeatIntervalMs(interval_ms)
@@ -148,16 +144,16 @@ TEST(RegistryTest, HeartbeatUpdatesMetrics) {
 }
 
 TEST(RegistryTest, HeartbeatUnknownNodeIsNoOp) {
-    auto ctrl = fast_controller();
+    auto                                         ctrl = fast_controller();
     std::unordered_map<std::string, NodeMetrics> m{{"model", make_metrics()}};
     EXPECT_NO_THROW(ctrl.heartbeat("ghost", m));
     EXPECT_EQ(ctrl.list_nodes().size(), 0u);
 }
 
 TEST(RegistryTest, NodeWithMultipleModels) {
-    auto ctrl = fast_controller();
+    auto     ctrl = fast_controller();
     NodeInfo n;
-    n.node_id = "n1";
+    n.node_id                   = "n1";
     n.model_metrics["resnet50"] = make_metrics(1.0);
     n.model_metrics["bert"]     = make_metrics(2.0);
     ctrl.register_node(n);
@@ -210,7 +206,8 @@ TEST(SchedulingTest, PrefersLeastLoaded) {
     int n1_count = 0;
     for (int i = 0; i < 200; ++i) {
         auto d = ctrl.schedule("model");
-        if (!d.error && d.target_node_id == "n1") ++n1_count;
+        if (!d.error && d.target_node_id == "n1")
+            ++n1_count;
     }
     // n1 is ~90× less loaded; should win the vast majority of p-o-2 draws
     EXPECT_GT(n1_count, 130);
@@ -259,8 +256,8 @@ TEST(SchedulingTest, TenantAffinityConsistency) {
     ctrl.heartbeat("n1", {{"model", make_metrics(1.0)}});
     ctrl.heartbeat("n2", {{"model", make_metrics(1.0)}});
 
-    std::string first = ctrl.schedule("model", "tenant-A").target_node_id;
-    int same_count = 0;
+    std::string first      = ctrl.schedule("model", "tenant-A").target_node_id;
+    int         same_count = 0;
     for (int i = 0; i < 50; ++i)
         if (ctrl.schedule("model", "tenant-A").target_node_id == first)
             ++same_count;
@@ -291,17 +288,19 @@ TEST(SchedulingTest, ConcurrentSchedule) {
     ctrl.heartbeat("n1", {{"resnet50", make_metrics(1.0)}});
     ctrl.heartbeat("n2", {{"resnet50", make_metrics(2.0)}});
 
-    std::atomic<int> success{0};
+    std::atomic<int>         success{0};
     std::vector<std::thread> threads;
     for (int t = 0; t < 8; ++t) {
         threads.emplace_back([&] {
             for (int i = 0; i < 100; ++i) {
                 auto d = ctrl.schedule("resnet50");
-                if (!d.error) ++success;
+                if (!d.error)
+                    ++success;
             }
         });
     }
-    for (auto& th : threads) th.join();
+    for (auto& th : threads)
+        th.join();
     EXPECT_EQ(success.load(), 800);
 }
 
@@ -334,7 +333,8 @@ TEST(CircuitBreakerTest, OpensAfterThreshold) {
     int n2_count = 0;
     for (int i = 0; i < 50; ++i) {
         auto d = ctrl.schedule("model");
-        if (!d.error && d.target_node_id == "n2") ++n2_count;
+        if (!d.error && d.target_node_id == "n2")
+            ++n2_count;
     }
     EXPECT_GE(n2_count, 49); // n1 gets at most 0 more probes once probe is in-flight
 }
@@ -380,7 +380,8 @@ TEST(CircuitBreakerTest, HalfOpenAllowsOneProbe) {
     int n1_count = 0;
     for (int i = 0; i < 10; ++i) {
         auto d = ctrl.schedule("model");
-        if (!d.error && d.target_node_id == "n1") ++n1_count;
+        if (!d.error && d.target_node_id == "n1")
+            ++n1_count;
     }
     // At most 1 probe goes to n1
     EXPECT_LE(n1_count, 1);
@@ -411,7 +412,7 @@ TEST(CircuitBreakerTest, IndependentPerModel) {
                     .setCircuitBreakerWindowMs(60000)
                     .build();
     NodeInfo n;
-    n.node_id = "n1";
+    n.node_id                   = "n1";
     n.model_metrics["resnet50"] = make_metrics();
     n.model_metrics["bert"]     = make_metrics();
     ctrl.register_node(n);
@@ -440,7 +441,8 @@ TEST(CircuitBreakerTest, IndependentPerNode) {
     // n2's circuit is intact
     for (int i = 0; i < 20; ++i) {
         auto d = ctrl.schedule("model");
-        if (!d.error && d.target_node_id == "n2") continue;
+        if (!d.error && d.target_node_id == "n2")
+            continue;
         // n1 might get one probe; n2 should dominate
     }
     // This just validates no crash
@@ -451,10 +453,8 @@ TEST(CircuitBreakerTest, IndependentPerNode) {
 // ===========================================================================
 
 TEST(FailureDetectionTest, NodeMarkedUnhealthyAfterTimeout) {
-    auto ctrl = ClusterController::Builder()
-                    .setHeartbeatTimeoutMs(150)
-                    .setHeartbeatIntervalMs(50)
-                    .build();
+    auto ctrl =
+        ClusterController::Builder().setHeartbeatTimeoutMs(150).setHeartbeatIntervalMs(50).build();
     ctrl.register_node(make_node("n1"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
     EXPECT_EQ(ctrl.healthy_node_count(), 1u);
@@ -465,29 +465,28 @@ TEST(FailureDetectionTest, NodeMarkedUnhealthyAfterTimeout) {
 }
 
 TEST(FailureDetectionTest, NodeRecoveryAfterHeartbeat) {
-    auto ctrl = ClusterController::Builder()
-                    .setHeartbeatTimeoutMs(150)
-                    .setHeartbeatIntervalMs(50)
-                    .build();
+    // timeout=300ms so recovery sleep (100ms) is well below the threshold
+    auto ctrl =
+        ClusterController::Builder().setHeartbeatTimeoutMs(300).setHeartbeatIntervalMs(50).build();
     ctrl.register_node(make_node("n1"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
 
-    // Let it time out
-    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    // Let it time out (500ms >> 300ms + 50ms interval)
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     EXPECT_EQ(ctrl.healthy_node_count(), 0u);
 
     // Send a fresh heartbeat → should recover immediately
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
-    // Monitor runs every 50ms; give it time to pick up the fresh timestamp
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    // 100ms < 300ms timeout: node stays healthy; gives monitor 2 cycles to confirm
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     EXPECT_EQ(ctrl.healthy_node_count(), 1u);
 }
 
 TEST(FailureDetectionTest, PartialClusterFailure) {
-    auto ctrl = ClusterController::Builder()
-                    .setHeartbeatTimeoutMs(150)
-                    .setHeartbeatIntervalMs(50)
-                    .build();
+    // timeout=300ms. n2 last heartbeat at T+150ms; check at T+400ms:
+    //   n1 age=400ms > 300ms → unhealthy; n2 age=250ms < 300ms → healthy
+    auto ctrl =
+        ClusterController::Builder().setHeartbeatTimeoutMs(300).setHeartbeatIntervalMs(50).build();
     ctrl.register_node(make_node("n1"));
     ctrl.register_node(make_node("n2"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
@@ -495,9 +494,9 @@ TEST(FailureDetectionTest, PartialClusterFailure) {
     EXPECT_EQ(ctrl.healthy_node_count(), 2u);
 
     // Only keep n2 alive
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
     ctrl.heartbeat("n2", {{"resnet50", make_metrics()}});
-    std::this_thread::sleep_for(std::chrono::milliseconds(350));
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
     EXPECT_EQ(ctrl.healthy_node_count(), 1u);
 
@@ -509,10 +508,8 @@ TEST(FailureDetectionTest, PartialClusterFailure) {
 }
 
 TEST(FailureDetectionTest, ZeroHealthyNodesAfterAllFail) {
-    auto ctrl = ClusterController::Builder()
-                    .setHeartbeatTimeoutMs(150)
-                    .setHeartbeatIntervalMs(50)
-                    .build();
+    auto ctrl =
+        ClusterController::Builder().setHeartbeatTimeoutMs(150).setHeartbeatIntervalMs(50).build();
     ctrl.register_node(make_node("n1"));
     ctrl.register_node(make_node("n2"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
@@ -526,23 +523,23 @@ TEST(FailureDetectionTest, ZeroHealthyNodesAfterAllFail) {
 }
 
 TEST(FailureDetectionTest, AllNodesRecover) {
-    auto ctrl = ClusterController::Builder()
-                    .setHeartbeatTimeoutMs(150)
-                    .setHeartbeatIntervalMs(50)
-                    .build();
+    // timeout=300ms so recovery sleep (100ms) is well below the threshold
+    auto ctrl =
+        ClusterController::Builder().setHeartbeatTimeoutMs(300).setHeartbeatIntervalMs(50).build();
     ctrl.register_node(make_node("n1"));
     ctrl.register_node(make_node("n2"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
     ctrl.heartbeat("n2", {{"resnet50", make_metrics()}});
 
-    // Let both time out
-    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    // Let both time out (500ms >> 300ms + 50ms interval)
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     ASSERT_EQ(ctrl.healthy_node_count(), 0u);
 
     // Revive both
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
     ctrl.heartbeat("n2", {{"resnet50", make_metrics()}});
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    // 100ms < 300ms timeout: nodes stay healthy; gives monitor 2 cycles to confirm
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     EXPECT_EQ(ctrl.healthy_node_count(), 2u);
 }
 
@@ -551,9 +548,7 @@ TEST(FailureDetectionTest, AllNodesRecover) {
 // ===========================================================================
 
 TEST(AutoscalingTest, ScaleUpOnHighQueueDepth) {
-    auto ctrl = ClusterController::Builder()
-                    .setSloQueueDepthMax(8.0)
-                    .build();
+    auto ctrl = ClusterController::Builder().setSloQueueDepthMax(8.0).build();
     // avg queue > 80% of 8.0 → 6.5
     ctrl.register_node(make_node("n1", "model", 6.5));
     ctrl.heartbeat("n1", {{"model", make_metrics(6.5)}});
@@ -567,25 +562,19 @@ TEST(AutoscalingTest, ScaleUpOnHighQueueDepth) {
 }
 
 TEST(AutoscalingTest, ScaleUpOnHighLatency) {
-    auto ctrl = ClusterController::Builder()
-                    .setSloP95TargetMs(100.0)
-                    .build();
+    auto ctrl = ClusterController::Builder().setSloP95TargetMs(100.0).build();
     ctrl.register_node(make_node("n1", "model", 0.1));
     ctrl.heartbeat("n1", {{"model", make_metrics(0.1, 250.0)}});
 
     auto recs = ctrl.compute_scale_signals();
     ASSERT_GE(recs.size(), 1u);
     auto it = std::find_if(recs.begin(), recs.end(),
-                           [](const ScaleRecommendation& r) {
-                               return r.delta_replicas > 0;
-                           });
+                           [](const ScaleRecommendation& r) { return r.delta_replicas > 0; });
     EXPECT_NE(it, recs.end());
 }
 
 TEST(AutoscalingTest, ScaleDownOnLowUtilization) {
-    auto ctrl = ClusterController::Builder()
-                    .setSloQueueDepthMax(8.0)
-                    .build();
+    auto ctrl = ClusterController::Builder().setSloQueueDepthMax(8.0).build();
     // 2 nodes with very low queue → scale-down eligible
     ctrl.register_node(make_node("n1", "model", 0.1));
     ctrl.register_node(make_node("n2", "model", 0.1));
@@ -593,18 +582,14 @@ TEST(AutoscalingTest, ScaleDownOnLowUtilization) {
     ctrl.heartbeat("n2", {{"model", make_metrics(0.1)}});
 
     auto recs = ctrl.compute_scale_signals();
-    auto it = std::find_if(recs.begin(), recs.end(),
-                           [](const ScaleRecommendation& r) {
-                               return r.delta_replicas < 0;
-                           });
+    auto it   = std::find_if(recs.begin(), recs.end(),
+                             [](const ScaleRecommendation& r) { return r.delta_replicas < 0; });
     EXPECT_NE(it, recs.end());
 }
 
 TEST(AutoscalingTest, NoScaleWhenSLOsMet) {
-    auto ctrl = ClusterController::Builder()
-                    .setSloP95TargetMs(100.0)
-                    .setSloQueueDepthMax(8.0)
-                    .build();
+    auto ctrl =
+        ClusterController::Builder().setSloP95TargetMs(100.0).setSloQueueDepthMax(8.0).build();
     // Single node at moderate load — no scale-up or scale-down
     ctrl.register_node(make_node("n1", "model", 2.0));
     ctrl.heartbeat("n1", {{"model", make_metrics(2.0, 50.0)}});
@@ -614,31 +599,25 @@ TEST(AutoscalingTest, NoScaleWhenSLOsMet) {
 }
 
 TEST(AutoscalingTest, MultiModelSignals) {
-    auto ctrl = ClusterController::Builder()
-                    .setSloQueueDepthMax(8.0)
-                    .build();
+    auto     ctrl = ClusterController::Builder().setSloQueueDepthMax(8.0).build();
     NodeInfo n;
-    n.node_id = "n1";
+    n.node_id                   = "n1";
     n.model_metrics["resnet50"] = make_metrics(7.0); // scale-up
     n.model_metrics["bert"]     = make_metrics(2.0); // ok
     ctrl.register_node(n);
-    ctrl.heartbeat("n1", {{"resnet50", make_metrics(7.0)},
-                          {"bert",     make_metrics(2.0)}});
+    ctrl.heartbeat("n1", {{"resnet50", make_metrics(7.0)}, {"bert", make_metrics(2.0)}});
 
     auto recs = ctrl.compute_scale_signals();
     // Only resnet50 should trigger scale-up
-    auto resnet_it = std::find_if(recs.begin(), recs.end(),
-                                  [](const ScaleRecommendation& r) {
-                                      return r.model_name == "resnet50";
-                                  });
+    auto resnet_it = std::find_if(recs.begin(), recs.end(), [](const ScaleRecommendation& r) {
+        return r.model_name == "resnet50";
+    });
     EXPECT_NE(resnet_it, recs.end());
     EXPECT_GT(resnet_it->delta_replicas, 0);
 }
 
 TEST(AutoscalingTest, JustificationIsNonEmpty) {
-    auto ctrl = ClusterController::Builder()
-                    .setSloQueueDepthMax(4.0)
-                    .build();
+    auto ctrl = ClusterController::Builder().setSloQueueDepthMax(4.0).build();
     ctrl.register_node(make_node("n1", "model", 4.0));
     ctrl.heartbeat("n1", {{"model", make_metrics(4.0)}});
 
@@ -687,10 +666,8 @@ TEST(MetricsTest, NodeMetricsLabels) {
     ctrl.heartbeat("n1", {{"resnet50", make_metrics(3.14)}});
 
     auto text = ctrl.metrics_text();
-    EXPECT_NE(text.find("node_queue_depth{node=\"n1\",model=\"resnet50\"}"),
-              std::string::npos);
-    EXPECT_NE(text.find("node_p95_latency_ms{node=\"n1\",model=\"resnet50\"}"),
-              std::string::npos);
+    EXPECT_NE(text.find("node_queue_depth{node=\"n1\",model=\"resnet50\"}"), std::string::npos);
+    EXPECT_NE(text.find("node_p95_latency_ms{node=\"n1\",model=\"resnet50\"}"), std::string::npos);
 }
 
 // ===========================================================================
@@ -707,13 +684,12 @@ TEST(ConcurrencyTest, ConcurrentHeartbeat) {
         threads.emplace_back([&, t] {
             for (int i = 0; i < 50; ++i) {
                 std::string id = (t % 2 == 0) ? "n1" : "n2";
-                ctrl.heartbeat(id, {{
-                    "resnet50", make_metrics(static_cast<double>(i % 5))
-                }});
+                ctrl.heartbeat(id, {{"resnet50", make_metrics(static_cast<double>(i % 5))}});
             }
         });
     }
-    for (auto& th : threads) th.join();
+    for (auto& th : threads)
+        th.join();
     // Just validate no crash or data race
     EXPECT_GE(ctrl.healthy_node_count(), 0u);
 }
@@ -723,7 +699,7 @@ TEST(ConcurrencyTest, ConcurrentRegisterAndSchedule) {
     ctrl.register_node(make_node("n1"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
 
-    std::atomic<int> success{0};
+    std::atomic<int>         success{0};
     std::vector<std::thread> threads;
 
     // Half threads register/deregister nodes
@@ -743,12 +719,14 @@ TEST(ConcurrencyTest, ConcurrentRegisterAndSchedule) {
         threads.emplace_back([&] {
             for (int i = 0; i < 50; ++i) {
                 auto d = ctrl.schedule("resnet50");
-                if (!d.error) ++success;
+                if (!d.error)
+                    ++success;
             }
         });
     }
 
-    for (auto& th : threads) th.join();
+    for (auto& th : threads)
+        th.join();
     EXPECT_GT(success.load(), 0);
 }
 
@@ -771,7 +749,8 @@ TEST(ConcurrencyTest, ConcurrentCircuitBreakerUpdates) {
             }
         });
     }
-    for (auto& th : threads) th.join();
+    for (auto& th : threads)
+        th.join();
     // No crash = pass
 }
 
@@ -780,10 +759,8 @@ TEST(ConcurrencyTest, AsyncScheduleFuture) {
     ctrl.register_node(make_node("n1"));
     ctrl.heartbeat("n1", {{"resnet50", make_metrics()}});
 
-    auto fut = std::async(std::launch::async, [&] {
-        return ctrl.schedule("resnet50");
-    });
-    auto d = fut.get();
+    auto fut = std::async(std::launch::async, [&] { return ctrl.schedule("resnet50"); });
+    auto d   = fut.get();
     EXPECT_FALSE(d.error.has_value());
     EXPECT_EQ(d.target_node_id, "n1");
 }
@@ -793,27 +770,27 @@ TEST(ConcurrencyTest, HighThroughput) {
     // 5 nodes, each serving the model
     for (int i = 1; i <= 5; ++i) {
         std::string id = "n" + std::to_string(i);
-        ctrl.register_node(make_node(id, "resnet50",
-                                      static_cast<double>(i) * 0.5));
+        ctrl.register_node(make_node(id, "resnet50", static_cast<double>(i) * 0.5));
         ctrl.heartbeat(id, {{"resnet50", make_metrics(static_cast<double>(i) * 0.5)}});
     }
 
-    constexpr int THREADS     = 16;
-    constexpr int PER_THREAD  = 6250; // 100K total
+    constexpr int THREADS    = 16;
+    constexpr int PER_THREAD = 6250; // 100K total
 
-    std::atomic<int> success{0};
+    std::atomic<int>         success{0};
     std::vector<std::thread> threads;
     threads.reserve(THREADS);
 
     for (int t = 0; t < THREADS; ++t) {
         threads.emplace_back([&, t] {
             for (int i = 0; i < PER_THREAD; ++i) {
-                auto d = ctrl.schedule("resnet50",
-                                        "tenant_" + std::to_string(t));
-                if (!d.error) ++success;
+                auto d = ctrl.schedule("resnet50", "tenant_" + std::to_string(t));
+                if (!d.error)
+                    ++success;
             }
         });
     }
-    for (auto& th : threads) th.join();
+    for (auto& th : threads)
+        th.join();
     EXPECT_EQ(success.load(), THREADS * PER_THREAD);
 }
