@@ -10,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <random>
+#include <shared_mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -55,7 +56,7 @@ struct CircuitBreaker {
 
     // Returns true if the circuit should BLOCK this request.
     // May transition Open → HalfOpen if the window has expired.
-    bool should_block(size_t threshold, size_t window_ms,
+    bool should_block([[maybe_unused]] size_t threshold, size_t window_ms,
                       std::chrono::steady_clock::time_point now) {
         if (state == State::Closed)
             return false;
@@ -119,8 +120,9 @@ struct ClusterController::Impl {
         uint64_t                                  version = 0;
     };
 
-    std::atomic<std::shared_ptr<ClusterState>> state{std::make_shared<ClusterState>()};
-    std::mutex                                 write_mutex; // guards all state writes
+    // Guarded by write_mutex for writes; shared_lock for reads (C++17 shared_mutex).
+    mutable std::shared_mutex     write_mutex;
+    std::shared_ptr<ClusterState> state{std::make_shared<ClusterState>()};
 
     // ---- Circuit breakers: node_id → model_name → CircuitBreaker ----
 
@@ -195,8 +197,12 @@ ClusterController::ClusterController(const ClusterControllerConfig& cfg)
             if (st.stop_requested())
                 break;
 
-            auto now     = std::chrono::steady_clock::now();
-            auto current = impl_ptr->state.load();
+            auto                                now = std::chrono::steady_clock::now();
+            std::shared_ptr<Impl::ClusterState> current;
+            {
+                std::shared_lock<std::shared_mutex> rlk(impl_ptr->write_mutex);
+                current = impl_ptr->state;
+            }
 
             // Build updated state (COW)
             auto next        = std::make_shared<Impl::ClusterState>(*current);
@@ -226,8 +232,8 @@ ClusterController::ClusterController(const ClusterControllerConfig& cfg)
 
             if (any_changed) {
                 next->version = current->version + 1;
-                std::lock_guard<std::mutex> lk(impl_ptr->write_mutex);
-                impl_ptr->state.store(next);
+                std::unique_lock<std::shared_mutex> wlk(impl_ptr->write_mutex);
+                impl_ptr->state = next;
             }
         }
     });
@@ -242,18 +248,18 @@ ClusterController& ClusterController::operator=(ClusterController&&) noexcept = 
 // ===========================================================================
 
 void ClusterController::register_node(const NodeInfo& info) {
-    std::lock_guard<std::mutex> lk(impl_->write_mutex);
-    auto                        current = impl_->state.load();
-    auto                        next    = std::make_shared<Impl::ClusterState>(*current);
-    next->nodes[info.node_id]           = info;
-    next->version                       = current->version + 1;
-    impl_->state.store(next);
+    std::unique_lock<std::shared_mutex> lk(impl_->write_mutex);
+    auto                                current = impl_->state;
+    auto                                next    = std::make_shared<Impl::ClusterState>(*current);
+    next->nodes[info.node_id]                   = info;
+    next->version                               = current->version + 1;
+    impl_->state                                = next;
 }
 
 void ClusterController::heartbeat(const std::string&                                  node_id,
                                   const std::unordered_map<std::string, NodeMetrics>& metrics) {
-    std::lock_guard<std::mutex> lk(impl_->write_mutex);
-    auto                        current = impl_->state.load();
+    std::unique_lock<std::shared_mutex> lk(impl_->write_mutex);
+    auto                                current = impl_->state;
     if (current->nodes.find(node_id) == current->nodes.end())
         return;
 
@@ -268,19 +274,19 @@ void ClusterController::heartbeat(const std::string&                            
     }
     node.healthy  = true;
     next->version = current->version + 1;
-    impl_->state.store(next);
+    impl_->state  = next;
 }
 
 void ClusterController::deregister_node(const std::string& node_id) {
     {
-        std::lock_guard<std::mutex> lk(impl_->write_mutex);
-        auto                        current = impl_->state.load();
+        std::unique_lock<std::shared_mutex> lk(impl_->write_mutex);
+        auto                                current = impl_->state;
         if (current->nodes.find(node_id) == current->nodes.end())
             return;
         auto next = std::make_shared<Impl::ClusterState>(*current);
         next->nodes.erase(node_id);
         next->version = current->version + 1;
-        impl_->state.store(next);
+        impl_->state  = next;
     }
     // Clean up circuit breakers
     std::lock_guard<std::mutex> cb_lk(impl_->cb_mutex);
@@ -295,8 +301,12 @@ RoutingDecision ClusterController::schedule(const std::string& model_name,
                                             const std::string& tenant_id) {
     impl_->total_scheduled.fetch_add(1, std::memory_order_relaxed);
 
-    auto state = impl_->state.load();
-    auto now   = std::chrono::steady_clock::now();
+    std::shared_ptr<Impl::ClusterState> state;
+    {
+        std::shared_lock<std::shared_mutex> rlk(impl_->write_mutex);
+        state = impl_->state;
+    }
+    auto now = std::chrono::steady_clock::now();
 
     struct Candidate {
         std::string node_id;
@@ -381,7 +391,11 @@ RoutingDecision ClusterController::schedule(const std::string& model_name,
 // ===========================================================================
 
 std::vector<ScaleRecommendation> ClusterController::compute_scale_signals() const {
-    auto state = impl_->state.load();
+    std::shared_ptr<Impl::ClusterState> state;
+    {
+        std::shared_lock<std::shared_mutex> rlk(impl_->write_mutex);
+        state = impl_->state;
+    }
 
     struct ModelAgg {
         double sum_queue = 0.0;
@@ -454,7 +468,11 @@ void ClusterController::record_failure(const std::string& node_id, const std::st
 // ===========================================================================
 
 std::string ClusterController::metrics_text() const {
-    auto state = impl_->state.load();
+    std::shared_ptr<Impl::ClusterState> state;
+    {
+        std::shared_lock<std::shared_mutex> rlk(impl_->write_mutex);
+        state = impl_->state;
+    }
 
     size_t healthy = 0;
     for (auto& [id, node] : state->nodes)
@@ -500,7 +518,11 @@ std::string ClusterController::metrics_text() const {
 }
 
 std::vector<NodeInfo> ClusterController::list_nodes() const {
-    auto                  state = impl_->state.load();
+    std::shared_ptr<Impl::ClusterState> state;
+    {
+        std::shared_lock<std::shared_mutex> rlk(impl_->write_mutex);
+        state = impl_->state;
+    }
     std::vector<NodeInfo> result;
     result.reserve(state->nodes.size());
     for (auto& [id, node] : state->nodes)
@@ -509,7 +531,11 @@ std::vector<NodeInfo> ClusterController::list_nodes() const {
 }
 
 size_t ClusterController::healthy_node_count() const {
-    auto   state = impl_->state.load();
+    std::shared_ptr<Impl::ClusterState> state;
+    {
+        std::shared_lock<std::shared_mutex> rlk(impl_->write_mutex);
+        state = impl_->state;
+    }
     size_t count = 0;
     for (auto& [id, node] : state->nodes)
         if (node.healthy)
