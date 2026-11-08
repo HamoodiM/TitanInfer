@@ -31,7 +31,7 @@ Measured on an Intel Core i5-14400F (MSVC Release, `/arch:AVX2`, median of 3, No
 | 256×256 | 8.92 ms | 8.40 ms | 1.06× |
 | 512×512 | 69.6 ms | 69.1 ms | 1.01× |
 
-An earlier version of this file listed ~3-5x speedups that were never measured. The strided gather of B (`_mm256_set_ps` from 8 scalar loads) is the likely limit; packing B is the next optimization.
+The strided gather of B (`_mm256_set_ps` from 8 scalar loads) is the likely limit; packing B is the next optimization.
 
 ### FMA (Fused Multiply-Add)
 

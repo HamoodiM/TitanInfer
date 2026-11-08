@@ -107,7 +107,6 @@ The kernel is only slightly faster, and the gap closes as matrices grow. The lik
 - `predict()` copies its output; an overload that writes into a caller-owned tensor would avoid it.
 - The PyTorch exporter writes format version 1 (the C++ writer uses 2) and can't export Conv2D or pooling layers.
 - The AVX2 kernel is only 1.0–1.2× faster than the naive loop (see Benchmarks); packing B should come before wiring it into the layers.
-- `docs/PERFORMANCE.md` lists approximate speedups that were never measured; the table above replaces them.
 
 ## How it was built
 
