@@ -1,0 +1,14 @@
+Intel Core i5-14400F, Windows 11, MSVC 19.44 Release /arch:AVX2, Google Benchmark 1.8.3, --benchmark_repetitions=3 --benchmark_min_time=0.5s (2026-11-08)
+Run on (16 X 2496 MHz CPU s)
+CPU Caches:
+Benchmark                            Time             CPU   Iterations UserCounters...
+BM_MatMul_Naive_64_median        70594 ns        68359 ns            3 items_per_second=7.66958G/s
+BM_MatMul_Naive_128_median      903066 ns       773929 ns            3 items_per_second=5.41949G/s
+BM_MatMul_Naive_256_median     8916065 ns      8541667 ns            3 items_per_second=3.92832G/s
+BM_MatMul_Naive_512_median    69552122 ns     65972222 ns            3 items_per_second=4.06892G/s
+BM_MatMul_AVX2_64_median         62538 ns        56250 ns            3 items_per_second=9.32068G/s
+BM_MatMul_AVX2_128_median       731436 ns       641741 ns            3 items_per_second=6.53582G/s
+BM_MatMul_AVX2_256_median      8402353 ns      7500000 ns            3 items_per_second=4.47392G/s
+BM_MatMul_AVX2_512_median     69124945 ns     62500000 ns            3 items_per_second=4.29497G/s
+BM_MatMul_Naive_Rect_median    8431601 ns      7291667 ns            3 items_per_second=4.60175G/s
+BM_MatMul_AVX2_Rect_median     8505764 ns      7118056 ns            3 items_per_second=4.71399G/s

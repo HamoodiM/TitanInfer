@@ -22,15 +22,16 @@ for (row blocks of MC)
 
 ### Speedup
 
-Typical speedups over naive implementation:
+Measured on an Intel Core i5-14400F (MSVC Release, `/arch:AVX2`, median of 3, Nov 2026; raw output in `benchmark_2026-11.txt`):
 
-| Matrix Size | Naive (ms) | AVX2 (ms) | Speedup |
+| Matrix Size | Naive | AVX2 | Speedup |
 |---|---|---|---|
-| 64×64 | ~0.02 | ~0.006 | ~3x |
-| 256×256 | ~2.5 | ~0.5 | ~5x |
-| 1024×1024 | ~160 | ~35 | ~4.5x |
+| 64×64 | 70.6 µs | 62.5 µs | 1.13× |
+| 128×128 | 0.90 ms | 0.73 ms | 1.23× |
+| 256×256 | 8.92 ms | 8.40 ms | 1.06× |
+| 512×512 | 69.6 ms | 69.1 ms | 1.01× |
 
-Speedup varies by matrix size, CPU cache hierarchy, and whether FMA is available.
+An earlier version of this file listed ~3-5x speedups that were never measured. The strided gather of B (`_mm256_set_ps` from 8 scalar loads) is the likely limit; packing B is the next optimization.
 
 ### FMA (Fused Multiply-Add)
 
