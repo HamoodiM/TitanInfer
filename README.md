@@ -66,7 +66,7 @@ docker-compose run test
 
 ## Tests
 
-346 GoogleTest cases (294 `TEST`, 52 `TEST_F`) across 20 test executables; `matrix_ops_simd_test` is only built when SIMD is available. CI runs on ubuntu-22.04 and windows-latest (`.github/workflows/ci.yml`), with separate `quality.yml` and `chaos.yml` workflows.
+346 GoogleTest cases (294 `TEST`, 52 `TEST_F`) across 20 test executables; `matrix_ops_simd_test` is only built when SIMD is available. Three Tensor bounds-checking tests are compiled only when `TITANINFER_DEBUG` is defined, so the Release builds in CI run 343. CI runs on ubuntu-22.04 and windows-latest (`.github/workflows/ci.yml`), with separate `quality.yml` and `chaos.yml` workflows.
 
 ```bash
 cd build && ctest --output-on-failure
