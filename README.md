@@ -110,4 +110,4 @@ The kernel is only slightly faster, and the gap closes as matrices grow. The lik
 
 ## How it was built
 
-Designed and built by Mohammad Mohammad. The final cleanup commits were made with an AI assistant and are marked as co-authored.
+Designed and built by Mohammad Mohammad. The final cleanup was done with an AI assistant (Claude). The later fix and docs commits carry a `Co-Authored-By` trailer; the five earlier "Titaninfer Cleanup Patch" commits were made the same way but don't have one.

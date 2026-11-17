@@ -13,17 +13,19 @@ namespace simd {
 /**
  * @brief AVX2-optimized matrix multiplication: C = A @ B
  *
- * Implements blocked matrix multiplication with AVX2 vectorization:
- * - 8-wide float operations using 256-bit registers
- * - 4x4 register blocking for L1 cache efficiency
- * - FMA (fused multiply-add) when available
+ * Implements cache-blocked matrix multiplication with AVX2 vectorization:
+ * - 8-wide float operations using 256-bit registers along K
+ * - Loop tiling over M/N/K for cache reuse (no register blocking yet;
+ *   each output element is accumulated in its own vector)
+ * - FMA (fused multiply-add) when __FMA__ is defined (GCC/Clang with -mfma).
+ *   MSVC never defines __FMA__, so MSVC builds use the mul+add fallback.
  *
  * @param A Left matrix (M, K)
  * @param B Right matrix (K, N)
  * @param C Output matrix (M, N)
  * @throws std::invalid_argument if shapes incompatible
  *
- * @performance Expected 3-5x speedup over naive implementation
+ * @performance Measured 1.01-1.23x over the naive loop (see docs/PERFORMANCE.md)
  */
 void matmul_avx2(const Tensor& A, const Tensor& B, Tensor& C);
 

@@ -137,7 +137,8 @@ void matmul_avx2(const Tensor& A, const Tensor& B, Tensor& C) {
                             // Use fused multiply-add
                             sum_vec = _mm256_fmadd_ps(a_vec, b_vec, sum_vec);
 #else
-                            // Manual multiply-add
+                            // Manual multiply-add. MSVC never defines __FMA__
+                            // (even with /arch:AVX2), so MSVC builds use this path.
                             __m256 prod = _mm256_mul_ps(a_vec, b_vec);
                             sum_vec     = _mm256_add_ps(sum_vec, prod);
 #endif

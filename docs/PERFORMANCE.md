@@ -35,7 +35,7 @@ The strided gather of B (`_mm256_set_ps` from 8 scalar loads) is the likely limi
 
 ### FMA (Fused Multiply-Add)
 
-When the `__FMA__` compiler flag is defined, the inner kernel uses `_mm256_fmadd_ps` instead of separate multiply and add. This provides:
+When the `__FMA__` macro is defined (GCC/Clang with `-mfma`), the inner kernel uses `_mm256_fmadd_ps` instead of separate multiply and add. MSVC never defines `__FMA__`, even with `/arch:AVX2`, so MSVC builds use the mul+add fallback. FMA provides:
 - **2x theoretical throughput** on the multiply-accumulate operation
 - **Better numerical precision** (single rounding instead of two)
 
@@ -43,7 +43,7 @@ When the `__FMA__` compiler flag is defined, the inner kernel uses `_mm256_fmadd
 
 ### Buffer Pre-Allocation
 
-`InferenceEngine` chains `output_shape()` calls through all layers at load time to pre-allocate intermediate buffers. This eliminates **all heap allocations** during inference.
+`InferenceEngine` chains `output_shape()` calls through all layers at load time to pre-allocate intermediate buffers, so the layer outputs are not reallocated on each call. Inference is not allocation-free, though: `predict()` copies its output into a new tensor, and the Dense layer's 2-D path allocates a transposed copy of its weights on every call (see the README's "Known issues").
 
 ```cpp
 // At load time: allocate once
@@ -52,7 +52,7 @@ for (layer in model) {
     buffers.emplace_back(current_shape);
 }
 
-// At inference time: zero allocations
+// At inference time: no buffer reallocation between layers
 layer[0].forward(input, buffers[0]);
 layer[1].forward(buffers[0], buffers[1]);
 // ...

@@ -919,6 +919,8 @@ TEST_F(ModelServerTest, ConcurrentRegisterAndPredict) {
     auto input = make_test_input();
     std::atomic<bool> stop{false};
     std::atomic<int> predict_ok{0};
+    std::atomic<int> predict_fail{0};
+    std::atomic<int> last_fail_status{0};
 
     // Thread 1: predict continuously
     std::thread predictor([&]() {
@@ -926,11 +928,31 @@ TEST_F(ModelServerTest, ConcurrentRegisterAndPredict) {
             Response resp = server.predict("mlp", input);
             if (resp.status_code == 200) {
                 predict_ok.fetch_add(1, std::memory_order_relaxed);
+            } else {
+                predict_fail.fetch_add(1, std::memory_order_relaxed);
+                last_fail_status.store(resp.status_code, std::memory_order_relaxed);
             }
         }
     });
 
-    // Thread 2: register/unregister models
+    // Block until predict_ok exceeds `floor` or the deadline passes. Registering
+    // is only a map insert, so without these waits the churn below can finish
+    // (and `stop` be set) before the predictor thread has run even once, which
+    // made the old "succeeded at least once" check scheduler-dependent.
+    auto wait_for_success_above = [&](int floor) {
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+        while (predict_ok.load(std::memory_order_relaxed) <= floor &&
+               std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        return predict_ok.load(std::memory_order_relaxed) > floor;
+    };
+
+    // The predictor must be serving before the registry churn starts.
+    bool served_before = wait_for_success_above(0);
+
+    // Thread 2 (this thread): register/unregister models while predicting
+    int ok_before_churn = predict_ok.load(std::memory_order_relaxed);
     TempFile f2("test_ms_concreg2.titan");
     save_test_mlp(f2.path);
     for (int i = 0; i < 20; ++i) {
@@ -941,10 +963,18 @@ TEST_F(ModelServerTest, ConcurrentRegisterAndPredict) {
         server.unregister_model("dynamic", static_cast<uint32_t>(i + 1));
     }
 
+    // ...and must still be serving after it.
+    bool served_after = wait_for_success_above(ok_before_churn);
+
     stop.store(true, std::memory_order_relaxed);
     predictor.join();
 
+    EXPECT_TRUE(served_before) << "no successful predict within 10s before churn";
+    EXPECT_TRUE(served_after) << "no successful predict within 10s after churn";
     EXPECT_GT(predict_ok.load(), 0);
+    EXPECT_EQ(predict_fail.load(), 0)
+        << "predict on 'mlp' failed during registry churn, last status "
+        << last_fail_status.load();
 }
 
 TEST_F(ModelServerTest, AsyncPredictFuture) {
